@@ -17,7 +17,8 @@ export async function GET(request: NextRequest) {
       conditions.push(sql`p.type = ${type}`)
     }
 
-    const whereClause = conditions.length > 0 ? sql`WHERE ${sql.join(conditions, sql` AND `)}` : sql``
+    const whereClause =
+      conditions.length > 0 ? sql`WHERE ${sql.join(conditions, sql` AND `)}` : sql``
 
     const permissions = await sql`
       SELECT p.*,

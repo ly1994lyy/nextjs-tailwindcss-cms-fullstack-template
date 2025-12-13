@@ -20,7 +20,9 @@ interface TabsContextType {
 const TabsContext = createContext<TabsContextType | undefined>(undefined)
 
 export function TabsProvider({ children }: { children: React.ReactNode }) {
-  const [tabs, setTabs] = useState<Tab[]>([{ key: "/dashboard", title: "仪表板", path: "/dashboard" }])
+  const [tabs, setTabs] = useState<Tab[]>([
+    { key: "/dashboard", title: "仪表板", path: "/dashboard" },
+  ])
   const [activeTab, setActiveTab] = useState("/dashboard")
 
   const addTab = (tab: Tab) => {
@@ -45,7 +47,9 @@ export function TabsProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <TabsContext.Provider value={{ tabs, activeTab, addTab, removeTab, setActiveTab }}>{children}</TabsContext.Provider>
+    <TabsContext.Provider value={{ tabs, activeTab, addTab, removeTab, setActiveTab }}>
+      {children}
+    </TabsContext.Provider>
   )
 }
 

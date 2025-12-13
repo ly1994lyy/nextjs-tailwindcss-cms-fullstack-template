@@ -5,7 +5,14 @@ import { Plus, Pencil, Trash2, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -190,9 +197,9 @@ export default function RolesPage() {
       <Card>
         <CardHeader>
           <CardTitle>角色列表</CardTitle>
-          <div className="flex items-center gap-2 mt-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="mt-4 flex items-center gap-2">
+            <div className="relative max-w-sm flex-1">
+              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
               <Input
                 placeholder="搜索角色..."
                 value={searchQuery}
@@ -241,7 +248,11 @@ export default function RolesPage() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         {canWrite && (
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(role)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenDialog(role)}
+                          >
                             <Pencil className="h-4 w-4" />
                           </Button>
                         )}
@@ -269,10 +280,12 @@ export default function RolesPage() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-h-[80vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingRole ? "编辑角色" : "添加角色"}</DialogTitle>
-            <DialogDescription>{editingRole ? "修改角色信息和权限配置" : "创建新的角色并分配权限"}</DialogDescription>
+            <DialogDescription>
+              {editingRole ? "修改角色信息和权限配置" : "创建新的角色并分配权限"}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -295,11 +308,11 @@ export default function RolesPage() {
             </div>
             <div className="space-y-3">
               <Label>权限配置</Label>
-              <div className="border border-border rounded-lg p-4 space-y-4">
+              <div className="border-border space-y-4 rounded-lg border p-4">
                 {Object.entries(groupedPermissions).map(([category, permissions]) => (
                   <div key={category} className="space-y-2">
-                    <h4 className="font-medium text-sm">{category}</h4>
-                    <div className="grid grid-cols-2 gap-3 ml-4">
+                    <h4 className="text-sm font-medium">{category}</h4>
+                    <div className="ml-4 grid grid-cols-2 gap-3">
                       {permissions.map((permission) => (
                         <div key={permission.id} className="flex items-center space-x-2">
                           <Checkbox
@@ -309,7 +322,7 @@ export default function RolesPage() {
                           />
                           <label
                             htmlFor={permission.id}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                           >
                             {permission.name}
                           </label>

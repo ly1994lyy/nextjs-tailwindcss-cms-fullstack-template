@@ -122,11 +122,16 @@
   body {
     @apply bg-background text-foreground;
     /* 添加过渡效果 */
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
   }
 
   /* 为所有主题相关元素添加过渡 */
   .transition-theme {
-    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    transition:
+      background-color 0.3s ease,
+      border-color 0.3s ease,
+      color 0.3s ease;
   }
 }

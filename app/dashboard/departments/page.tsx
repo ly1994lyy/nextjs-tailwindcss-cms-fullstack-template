@@ -5,7 +5,14 @@ import { Plus, Pencil, Trash2, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -28,7 +35,14 @@ interface Department {
 }
 
 const mockDepartments: Department[] = [
-  { id: "1", name: "技术部", description: "负责产品研发", parentId: null, memberCount: 45, createdAt: "2024-01-15" },
+  {
+    id: "1",
+    name: "技术部",
+    description: "负责产品研发",
+    parentId: null,
+    memberCount: 45,
+    createdAt: "2024-01-15",
+  },
   {
     id: "2",
     name: "前端组",
@@ -47,8 +61,22 @@ const mockDepartments: Department[] = [
     memberCount: 20,
     createdAt: "2024-01-20",
   },
-  { id: "4", name: "市场部", description: "市场营销与推广", parentId: null, memberCount: 28, createdAt: "2024-01-15" },
-  { id: "5", name: "人力资源部", description: "人事管理", parentId: null, memberCount: 12, createdAt: "2024-01-15" },
+  {
+    id: "4",
+    name: "市场部",
+    description: "市场营销与推广",
+    parentId: null,
+    memberCount: 28,
+    createdAt: "2024-01-15",
+  },
+  {
+    id: "5",
+    name: "人力资源部",
+    description: "人事管理",
+    parentId: null,
+    memberCount: 12,
+    createdAt: "2024-01-15",
+  },
 ]
 
 export default function DepartmentsPage() {
@@ -99,7 +127,9 @@ export default function DepartmentsPage() {
                 name: formData.name,
                 description: formData.description,
                 parentId: formData.parentId || null,
-                parentName: formData.parentId ? departments.find((d) => d.id === formData.parentId)?.name : undefined,
+                parentName: formData.parentId
+                  ? departments.find((d) => d.id === formData.parentId)?.name
+                  : undefined,
               }
             : dept,
         ),
@@ -110,7 +140,9 @@ export default function DepartmentsPage() {
         name: formData.name,
         description: formData.description,
         parentId: formData.parentId || null,
-        parentName: formData.parentId ? departments.find((d) => d.id === formData.parentId)?.name : undefined,
+        parentName: formData.parentId
+          ? departments.find((d) => d.id === formData.parentId)?.name
+          : undefined,
         memberCount: 0,
         createdAt: new Date().toISOString().split("T")[0],
       }
@@ -145,9 +177,9 @@ export default function DepartmentsPage() {
       <Card>
         <CardHeader>
           <CardTitle>部门列表</CardTitle>
-          <div className="flex items-center gap-2 mt-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="mt-4 flex items-center gap-2">
+            <div className="relative max-w-sm flex-1">
+              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
               <Input
                 placeholder="搜索部门..."
                 value={searchQuery}
@@ -181,7 +213,11 @@ export default function DepartmentsPage() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         {canWrite && (
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(department)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenDialog(department)}
+                          >
                             <Pencil className="h-4 w-4" />
                           </Button>
                         )}
@@ -212,7 +248,9 @@ export default function DepartmentsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingDepartment ? "编辑部门" : "添加部门"}</DialogTitle>
-            <DialogDescription>{editingDepartment ? "修改部门信息" : "创建新的部门"}</DialogDescription>
+            <DialogDescription>
+              {editingDepartment ? "修改部门信息" : "创建新的部门"}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -239,7 +277,7 @@ export default function DepartmentsPage() {
                 id="parent"
                 value={formData.parentId}
                 onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 <option value="">无上级部门</option>
                 {departments

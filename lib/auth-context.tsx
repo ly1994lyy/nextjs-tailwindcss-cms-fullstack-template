@@ -78,7 +78,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return user.permissions.includes(permission)
   }
 
-  return <AuthContext.Provider value={{ user, login, logout, hasPermission }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={{ user, login, logout, hasPermission }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {

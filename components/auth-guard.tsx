@@ -29,9 +29,9 @@ export function AuthGuard({ children, requiredPermission }: AuthGuardProps) {
 
   if (requiredPermission && !hasPermission(requiredPermission)) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">权限不足</h2>
+          <h2 className="mb-2 text-2xl font-bold">权限不足</h2>
           <p className="text-muted-foreground">您没有访问此页面的权限</p>
         </div>
       </div>

@@ -6,7 +6,7 @@ export default function MenusLoading() {
     <div className="space-y-6">
       <div>
         <Skeleton className="h-9 w-32" />
-        <Skeleton className="h-5 w-64 mt-2" />
+        <Skeleton className="mt-2 h-5 w-64" />
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -14,7 +14,7 @@ export default function MenusLoading() {
           <Card key={i}>
             <CardHeader className="pb-3">
               <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-9 w-16 mt-2" />
+              <Skeleton className="mt-2 h-9 w-16" />
             </CardHeader>
           </Card>
         ))}

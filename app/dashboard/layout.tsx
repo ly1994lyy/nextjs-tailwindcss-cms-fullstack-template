@@ -110,19 +110,21 @@ function MenuItem({ item, pathname, onNavigate, hasPermission, collapsed, t }: a
       <li>
         <button
           onClick={() => setExpanded(!expanded)}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors w-full text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          className="text-muted-foreground hover:bg-accent hover:text-accent-foreground flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors"
           title={collapsed ? t(item.title) : ""}
         >
           <Icon className="h-5 w-5 shrink-0" />
           {!collapsed && (
             <>
               <span className="flex-1 text-left">{t(item.title)}</span>
-              <ChevronRight className={cn("h-4 w-4 transition-transform", expanded && "rotate-90")} />
+              <ChevronRight
+                className={cn("h-4 w-4 transition-transform", expanded && "rotate-90")}
+              />
             </>
           )}
         </button>
         {expanded && !collapsed && (
-          <ul className="ml-4 mt-1 space-y-1">
+          <ul className="mt-1 ml-4 space-y-1">
             {filteredChildren.map((child: any) => (
               <MenuItem
                 key={child.href}
@@ -146,7 +148,7 @@ function MenuItem({ item, pathname, onNavigate, hasPermission, collapsed, t }: a
       <Link
         href={item.href}
         className={cn(
-          "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+          "flex items-center gap-3 rounded-lg px-3 py-2 transition-colors",
           isActive
             ? "bg-primary text-primary-foreground"
             : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
@@ -200,35 +202,40 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   return (
     <AuthGuard>
-      <div className="flex h-screen bg-muted/40">
+      <div className="bg-muted/40 flex h-screen">
         {/* Mobile backdrop */}
         {mobileOpen && (
           <div
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
+            className="bg-background/80 fixed inset-0 z-40 backdrop-blur-sm lg:hidden"
             onClick={() => setMobileOpen(false)}
           />
         )}
 
         <aside
           className={cn(
-            "fixed inset-y-0 left-0 z-50 bg-card border-r border-border transform transition-all duration-300 ease-in-out lg:translate-x-0 lg:static",
+            "bg-card border-border fixed inset-y-0 left-0 z-50 transform border-r transition-all duration-300 ease-in-out lg:static lg:translate-x-0",
             mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
             collapsed ? "lg:w-16" : "lg:w-64",
             !collapsed && "w-64",
           )}
         >
-          <div className="flex flex-col h-full">
+          <div className="flex h-full flex-col">
             {/* Logo */}
-            <div className="flex items-center justify-between h-16 px-4 border-b border-border">
+            <div className="border-border flex h-16 items-center justify-between border-b px-4">
               {!collapsed && <h1 className="text-xl font-bold">Admin</h1>}
               {collapsed && <LayoutDashboard className="h-6 w-6" />}
-              <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen(false)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                onClick={() => setMobileOpen(false)}
+              >
                 <X className="h-5 w-5" />
               </Button>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 overflow-y-auto py-4 px-3">
+            <nav className="flex-1 overflow-y-auto px-3 py-4">
               <ul className="space-y-1">
                 {filteredMenuItems.map((item) => (
                   <MenuItem
@@ -244,12 +251,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </ul>
             </nav>
 
-            <div className="p-4 border-t border-border space-y-2">
+            <div className="border-border space-y-2 border-t p-4">
               {/* 收起/展开按钮 */}
               <Button
                 variant="ghost"
                 size={collapsed ? "icon" : "sm"}
-                className="w-full hidden lg:flex"
+                className="hidden w-full lg:flex"
                 onClick={() => setSidebarMode(collapsed ? "full" : "collapsed")}
               >
                 <ChevronLeft className={cn("h-4 w-4", collapsed && "rotate-180")} />
@@ -259,15 +266,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               {/* 用户信息 */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className={cn("w-full", collapsed ? "px-2" : "justify-start gap-2")}>
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold shrink-0">
+                  <Button
+                    variant="ghost"
+                    className={cn("w-full", collapsed ? "px-2" : "justify-start gap-2")}
+                  >
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <div className="bg-primary text-primary-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-semibold">
                         {user?.name.charAt(0)}
                       </div>
                       {!collapsed && (
-                        <div className="flex-1 text-left min-w-0">
-                          <div className="text-sm font-medium truncate">{user?.name}</div>
-                          <div className="text-xs text-muted-foreground truncate">{user?.role}</div>
+                        <div className="min-w-0 flex-1 text-left">
+                          <div className="truncate text-sm font-medium">{user?.name}</div>
+                          <div className="text-muted-foreground truncate text-xs">{user?.role}</div>
                         </div>
                       )}
                     </div>
@@ -320,40 +330,49 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </aside>
 
         {/* Main content */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between">
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <header className="border-border bg-card flex h-16 items-center justify-between border-b px-6">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setMobileOpen(true)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                onClick={() => setMobileOpen(true)}
+              >
                 <MenuIcon className="h-5 w-5" />
               </Button>
 
               {/* 面包屑 */}
-              <nav className="hidden md:flex items-center gap-2 text-sm">
-                <Home className="h-4 w-4 text-muted-foreground" />
+              <nav className="hidden items-center gap-2 text-sm md:flex">
+                <Home className="text-muted-foreground h-4 w-4" />
                 {breadcrumbs.map((crumb, index) => (
                   <React.Fragment key={index}>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    <span className={index === breadcrumbs.length - 1 ? "font-medium" : "text-muted-foreground"}>
+                    <ChevronRight className="text-muted-foreground h-4 w-4" />
+                    <span
+                      className={
+                        index === breadcrumbs.length - 1 ? "font-medium" : "text-muted-foreground"
+                      }
+                    >
                       {crumb}
                     </span>
                   </React.Fragment>
                 ))}
               </nav>
             </div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-muted-foreground text-sm">
               {t("common.welcome")}, {user?.name}
             </div>
           </header>
 
-          <div className="border-b border-border bg-card px-4 flex items-center gap-1 overflow-x-auto">
+          <div className="border-border bg-card flex items-center gap-1 overflow-x-auto border-b px-4">
             {tabs.map((tab) => (
               <div
                 key={tab.key}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-2 border-b-2 transition-colors cursor-pointer group",
+                  "group flex cursor-pointer items-center gap-2 border-b-2 px-4 py-2 transition-colors",
                   activeTab === tab.key
                     ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground",
+                    : "text-muted-foreground hover:text-foreground border-transparent",
                 )}
                 onClick={() => {
                   setActiveTab(tab.key)
@@ -372,7 +391,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                         router.push(nextTab.path)
                       }
                     }}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="opacity-0 transition-opacity group-hover:opacity-100"
                   >
                     <X className="h-3 w-3" />
                   </button>

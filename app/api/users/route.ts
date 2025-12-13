@@ -12,7 +12,9 @@ export async function GET(request: NextRequest) {
     const params: any = {}
 
     if (search) {
-      conditions.push(`(u.username ILIKE $search OR u.real_name ILIKE $search OR u.email ILIKE $search)`)
+      conditions.push(
+        `(u.username ILIKE $search OR u.real_name ILIKE $search OR u.email ILIKE $search)`,
+      )
       params.search = `%${search}%`
     }
 

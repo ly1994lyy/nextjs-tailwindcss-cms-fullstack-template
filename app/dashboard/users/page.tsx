@@ -5,7 +5,14 @@ import { Plus, Pencil, Trash2, Search, Mail, Phone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -168,7 +175,8 @@ export default function UsersPage() {
                 email: formData.email,
                 phone: formData.phone,
                 departmentId: formData.departmentId,
-                departmentName: mockDepartments.find((d) => d.id === formData.departmentId)?.name || "",
+                departmentName:
+                  mockDepartments.find((d) => d.id === formData.departmentId)?.name || "",
                 roleId: formData.roleId,
                 roleName: mockRoles.find((r) => r.id === formData.roleId)?.name || "",
               }
@@ -220,9 +228,9 @@ export default function UsersPage() {
       <Card>
         <CardHeader>
           <CardTitle>用户列表</CardTitle>
-          <div className="flex items-center gap-2 mt-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="mt-4 flex items-center gap-2">
+            <div className="relative max-w-sm flex-1">
+              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
               <Input
                 placeholder="搜索用户..."
                 value={searchQuery}
@@ -254,11 +262,11 @@ export default function UsersPage() {
                   <TableCell>
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 text-sm">
-                        <Mail className="h-3 w-3 text-muted-foreground" />
+                        <Mail className="text-muted-foreground h-3 w-3" />
                         {user.email}
                       </div>
                       <div className="flex items-center gap-2 text-sm">
-                        <Phone className="h-3 w-3 text-muted-foreground" />
+                        <Phone className="text-muted-foreground h-3 w-3" />
                         {user.phone}
                       </div>
                     </div>
@@ -275,7 +283,11 @@ export default function UsersPage() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         {canWrite && (
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(user)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenDialog(user)}
+                          >
                             <Pencil className="h-4 w-4" />
                           </Button>
                         )}
@@ -306,7 +318,9 @@ export default function UsersPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editingUser ? "编辑用户" : "添加用户"}</DialogTitle>
-            <DialogDescription>{editingUser ? "修改用户信息" : "创建新的用户账号"}</DialogDescription>
+            <DialogDescription>
+              {editingUser ? "修改用户信息" : "创建新的用户账号"}
+            </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
@@ -353,7 +367,7 @@ export default function UsersPage() {
                 id="department"
                 value={formData.departmentId}
                 onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 <option value="">请选择部门</option>
                 {mockDepartments.map((dept) => (
@@ -369,7 +383,7 @@ export default function UsersPage() {
                 id="role"
                 value={formData.roleId}
                 onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 <option value="">请选择角色</option>
                 {mockRoles.map((role) => (
@@ -380,7 +394,7 @@ export default function UsersPage() {
               </select>
             </div>
             {!editingUser && (
-              <div className="space-y-2 col-span-2">
+              <div className="col-span-2 space-y-2">
                 <Label htmlFor="password">密码</Label>
                 <Input
                   id="password"

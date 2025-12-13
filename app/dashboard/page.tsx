@@ -45,14 +45,16 @@ export default function DashboardPage() {
         <p className="text-muted-foreground mt-2">欢迎回来，{user?.name}！这是您的系统概览。</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon
           return (
             <Card key={stat.title}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
-                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
+                <CardTitle className="text-muted-foreground text-sm font-medium">
+                  {stat.title}
+                </CardTitle>
+                <div className={`rounded-lg p-2 ${stat.bgColor}`}>
                   <Icon className={`h-5 w-5 ${stat.color}`} />
                 </div>
               </CardHeader>
@@ -70,17 +72,19 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <div className="flex justify-between py-2 border-b border-border">
+            <div className="border-border flex justify-between border-b py-2">
               <span className="text-muted-foreground">当前用户</span>
               <span className="font-medium">{user?.name}</span>
             </div>
-            <div className="flex justify-between py-2 border-b border-border">
+            <div className="border-border flex justify-between border-b py-2">
               <span className="text-muted-foreground">角色</span>
               <span className="font-medium">{user?.role}</span>
             </div>
             <div className="flex justify-between py-2">
               <span className="text-muted-foreground">权限级别</span>
-              <span className="font-medium">{user?.permissions.includes("*") ? "全部权限" : "受限权限"}</span>
+              <span className="font-medium">
+                {user?.permissions.includes("*") ? "全部权限" : "受限权限"}
+              </span>
             </div>
           </div>
         </CardContent>

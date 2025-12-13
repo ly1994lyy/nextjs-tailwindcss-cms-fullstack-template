@@ -5,7 +5,14 @@ import { Plus, Pencil, Trash2, Search, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
@@ -247,19 +254,19 @@ export default function PermissionsPage() {
       </div>
 
       {/* Category Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
         <Card
           className={`cursor-pointer transition-colors ${selectedCategory === "all" ? "border-primary" : ""}`}
           onClick={() => setSelectedCategory("all")}
         >
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Shield className="h-5 w-5 text-primary" />
+              <div className="bg-primary/10 rounded-lg p-2">
+                <Shield className="text-primary h-5 w-5" />
               </div>
               <div>
                 <div className="text-2xl font-bold">{categoryStats.all}</div>
-                <div className="text-sm text-muted-foreground">全部权限</div>
+                <div className="text-muted-foreground text-sm">全部权限</div>
               </div>
             </div>
           </CardContent>
@@ -272,12 +279,12 @@ export default function PermissionsPage() {
           >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-muted">
-                  <Shield className="h-5 w-5 text-muted-foreground" />
+                <div className="bg-muted rounded-lg p-2">
+                  <Shield className="text-muted-foreground h-5 w-5" />
                 </div>
                 <div>
                   <div className="text-2xl font-bold">{categoryStats[category] || 0}</div>
-                  <div className="text-sm text-muted-foreground">{category}</div>
+                  <div className="text-muted-foreground text-sm">{category}</div>
                 </div>
               </div>
             </CardContent>
@@ -288,9 +295,9 @@ export default function PermissionsPage() {
       <Card>
         <CardHeader>
           <CardTitle>权限列表</CardTitle>
-          <div className="flex items-center gap-2 mt-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="mt-4 flex items-center gap-2">
+            <div className="relative max-w-sm flex-1">
+              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
               <Input
                 placeholder="搜索权限..."
                 value={searchQuery}
@@ -328,7 +335,11 @@ export default function PermissionsPage() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         {canWrite && (
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(permission)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenDialog(permission)}
+                          >
                             <Pencil className="h-4 w-4" />
                           </Button>
                         )}
@@ -390,7 +401,7 @@ export default function PermissionsPage() {
                 id="category"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 <option value="">请选择分类</option>
                 {categories.map((category) => (
@@ -424,7 +435,9 @@ export default function PermissionsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>确认删除</DialogTitle>
-            <DialogDescription>您确定要删除此权限吗？此操作无法撤销，且会影响所有关联的角色。</DialogDescription>
+            <DialogDescription>
+              您确定要删除此权限吗？此操作无法撤销，且会影响所有关联的角色。
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>

@@ -131,7 +131,9 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     return translations[language][key as keyof typeof translations.zh] || key
   }
 
-  return <I18nContext.Provider value={{ language, setLanguage, t }}>{children}</I18nContext.Provider>
+  return (
+    <I18nContext.Provider value={{ language, setLanguage, t }}>{children}</I18nContext.Provider>
+  )
 }
 
 export function useI18n() {

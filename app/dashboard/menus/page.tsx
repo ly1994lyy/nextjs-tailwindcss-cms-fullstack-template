@@ -13,7 +13,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/lib/auth-context"
 import { Badge } from "@/components/ui/badge"
@@ -42,7 +48,15 @@ const initialMenus: Menu[] = [
     visible: true,
     type: "menu",
   },
-  { id: "2", name: "系统管理", icon: "Settings", parentId: null, sort: 2, visible: true, type: "directory" },
+  {
+    id: "2",
+    name: "系统管理",
+    icon: "Settings",
+    parentId: null,
+    sort: 2,
+    visible: true,
+    type: "directory",
+  },
   {
     id: "3",
     name: "部门管理",
@@ -87,7 +101,15 @@ const initialMenus: Menu[] = [
     permission: "permission:read",
     type: "menu",
   },
-  { id: "7", name: "开发管理", icon: "Code", parentId: null, sort: 3, visible: true, type: "directory" },
+  {
+    id: "7",
+    name: "开发管理",
+    icon: "Code",
+    parentId: null,
+    sort: 3,
+    visible: true,
+    type: "directory",
+  },
   {
     id: "8",
     name: "菜单管理",
@@ -236,11 +258,14 @@ export default function MenusPage() {
     return items.map((menu) => (
       <div key={menu.id}>
         <div
-          className="flex items-center gap-3 p-3 hover:bg-accent rounded-lg group"
+          className="hover:bg-accent group flex items-center gap-3 rounded-lg p-3"
           style={{ paddingLeft: `${level * 1.5 + 0.75}rem` }}
         >
           {menu.children && menu.children.length > 0 && (
-            <button onClick={() => toggleExpand(menu.id)} className="p-0.5 hover:bg-background rounded">
+            <button
+              onClick={() => toggleExpand(menu.id)}
+              className="hover:bg-background rounded p-0.5"
+            >
               <ChevronRight
                 className={`h-4 w-4 transition-transform ${expandedMenus.has(menu.id) ? "rotate-90" : ""}`}
               />
@@ -248,14 +273,14 @@ export default function MenusPage() {
           )}
           {(!menu.children || menu.children.length === 0) && <div className="w-5" />}
 
-          <div className="flex-1 flex items-center gap-3">
+          <div className="flex flex-1 items-center gap-3">
             <div className="font-medium">{menu.name}</div>
             {menu.type === "directory" ? (
               <Badge variant="secondary">目录</Badge>
             ) : (
               <Badge variant="outline">菜单</Badge>
             )}
-            {menu.path && <div className="text-sm text-muted-foreground">{menu.path}</div>}
+            {menu.path && <div className="text-muted-foreground text-sm">{menu.path}</div>}
             {menu.permission && (
               <Badge variant="outline" className="text-xs">
                 {menu.permission}
@@ -265,7 +290,7 @@ export default function MenusPage() {
           </div>
 
           {hasPermission("menu:write") && (
-            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
               <Button variant="ghost" size="icon" onClick={() => handleEdit(menu)}>
                 <Pencil className="h-4 w-4" />
               </Button>
@@ -319,13 +344,17 @@ export default function MenusPage() {
         <Card>
           <CardHeader className="pb-3">
             <CardDescription>目录数量</CardDescription>
-            <CardTitle className="text-3xl">{menus.filter((m) => m.type === "directory").length}</CardTitle>
+            <CardTitle className="text-3xl">
+              {menus.filter((m) => m.type === "directory").length}
+            </CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-3">
             <CardDescription>菜单项数量</CardDescription>
-            <CardTitle className="text-3xl">{menus.filter((m) => m.type === "menu").length}</CardTitle>
+            <CardTitle className="text-3xl">
+              {menus.filter((m) => m.type === "menu").length}
+            </CardTitle>
           </CardHeader>
         </Card>
         <Card>
@@ -340,9 +369,9 @@ export default function MenusPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 flex-1">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="flex flex-1 items-center gap-4">
+              <div className="relative max-w-sm flex-1">
+                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
                 <Input
                   placeholder="搜索菜单名称或路径..."
                   value={searchTerm}
@@ -353,7 +382,7 @@ export default function MenusPage() {
             </div>
             {hasPermission("menu:write") && (
               <Button onClick={handleAdd}>
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 新增菜单
               </Button>
             )}
@@ -376,7 +405,9 @@ export default function MenusPage() {
               <Label>菜单类型</Label>
               <Select
                 value={formData.type}
-                onValueChange={(value: "directory" | "menu") => setFormData({ ...formData, type: value })}
+                onValueChange={(value: "directory" | "menu") =>
+                  setFormData({ ...formData, type: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -423,7 +454,8 @@ export default function MenusPage() {
                   <SelectValue placeholder="无（顶级菜单）" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">无（顶级菜单）</SelectItem> // Updated value prop to be a non-empty string
+                  <SelectItem value="0">无（顶级菜单）</SelectItem> // Updated value prop to be a
+                  non-empty string
                   {getAvailableParents().map((menu) => (
                     <SelectItem key={menu.id} value={menu.id}>
                       {menu.name}

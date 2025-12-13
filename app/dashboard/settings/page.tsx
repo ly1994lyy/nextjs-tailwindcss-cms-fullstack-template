@@ -8,7 +8,8 @@ import { Sun, Moon, Monitor, Maximize2, Minimize2 } from "lucide-react"
 
 export default function SettingsPage() {
   const { t, language, setLanguage } = useI18n()
-  const { themeMode, setThemeMode, sidebarMode, setSidebarMode, primaryColor, setPrimaryColor } = useTheme()
+  const { themeMode, setThemeMode, sidebarMode, setSidebarMode, primaryColor, setPrimaryColor } =
+    useTheme()
 
   return (
     <div className="space-y-6">
@@ -54,7 +55,7 @@ export default function SettingsPage() {
               <Button
                 variant={themeMode === "light" ? "default" : "outline"}
                 onClick={() => setThemeMode("light")}
-                className="flex flex-col gap-2 h-auto py-4"
+                className="flex h-auto flex-col gap-2 py-4"
               >
                 <Sun className="h-5 w-5" />
                 <span>{t("settings.light")}</span>
@@ -62,7 +63,7 @@ export default function SettingsPage() {
               <Button
                 variant={themeMode === "dark" ? "default" : "outline"}
                 onClick={() => setThemeMode("dark")}
-                className="flex flex-col gap-2 h-auto py-4"
+                className="flex h-auto flex-col gap-2 py-4"
               >
                 <Moon className="h-5 w-5" />
                 <span>{t("settings.dark")}</span>
@@ -70,7 +71,7 @@ export default function SettingsPage() {
               <Button
                 variant={themeMode === "system" ? "default" : "outline"}
                 onClick={() => setThemeMode("system")}
-                className="flex flex-col gap-2 h-auto py-4"
+                className="flex h-auto flex-col gap-2 py-4"
               >
                 <Monitor className="h-5 w-5" />
                 <span>{t("settings.system")}</span>
@@ -90,7 +91,7 @@ export default function SettingsPage() {
               <Button
                 variant={sidebarMode === "full" ? "default" : "outline"}
                 onClick={() => setSidebarMode("full")}
-                className="flex flex-col gap-2 h-auto py-4"
+                className="flex h-auto flex-col gap-2 py-4"
               >
                 <Maximize2 className="h-5 w-5" />
                 <span>{t("settings.fullWidth")}</span>
@@ -98,7 +99,7 @@ export default function SettingsPage() {
               <Button
                 variant={sidebarMode === "collapsed" ? "default" : "outline"}
                 onClick={() => setSidebarMode("collapsed")}
-                className="flex flex-col gap-2 h-auto py-4"
+                className="flex h-auto flex-col gap-2 py-4"
               >
                 <Minimize2 className="h-5 w-5" />
                 <span>{t("settings.collapsed")}</span>
@@ -118,33 +119,33 @@ export default function SettingsPage() {
               <Button
                 variant={primaryColor === "blue" ? "default" : "outline"}
                 onClick={() => setPrimaryColor("blue")}
-                className="h-20 flex flex-col gap-2"
+                className="flex h-20 flex-col gap-2"
               >
-                <div className="w-8 h-8 rounded-full bg-blue-500" />
+                <div className="h-8 w-8 rounded-full bg-blue-500" />
                 <span>{t("settings.blue")}</span>
               </Button>
               <Button
                 variant={primaryColor === "purple" ? "default" : "outline"}
                 onClick={() => setPrimaryColor("purple")}
-                className="h-20 flex flex-col gap-2"
+                className="flex h-20 flex-col gap-2"
               >
-                <div className="w-8 h-8 rounded-full bg-purple-500" />
+                <div className="h-8 w-8 rounded-full bg-purple-500" />
                 <span>{t("settings.purple")}</span>
               </Button>
               <Button
                 variant={primaryColor === "green" ? "default" : "outline"}
                 onClick={() => setPrimaryColor("green")}
-                className="h-20 flex flex-col gap-2"
+                className="flex h-20 flex-col gap-2"
               >
-                <div className="w-8 h-8 rounded-full bg-green-500" />
+                <div className="h-8 w-8 rounded-full bg-green-500" />
                 <span>{t("settings.green")}</span>
               </Button>
               <Button
                 variant={primaryColor === "orange" ? "default" : "outline"}
                 onClick={() => setPrimaryColor("orange")}
-                className="h-20 flex flex-col gap-2"
+                className="flex h-20 flex-col gap-2"
               >
-                <div className="w-8 h-8 rounded-full bg-orange-500" />
+                <div className="h-8 w-8 rounded-full bg-orange-500" />
                 <span>{t("settings.orange")}</span>
               </Button>
             </div>

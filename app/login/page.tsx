@@ -38,10 +38,10 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40">
+    <div className="bg-muted/40 flex min-h-screen items-center justify-center">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">管理系统登录</CardTitle>
+          <CardTitle className="text-center text-2xl font-bold">管理系统登录</CardTitle>
           <CardDescription className="text-center">请输入您的账号信息以登录系统</CardDescription>
         </CardHeader>
         <CardContent>
@@ -68,7 +68,7 @@ export default function LoginPage() {
                 required
               />
             </div>
-            {error && <div className="text-sm text-destructive">{error}</div>}
+            {error && <div className="text-destructive text-sm">{error}</div>}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "登录中..." : "登录"}
             </Button>

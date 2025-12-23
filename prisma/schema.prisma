@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  password     String
+  realName     String   @map("real_name")
+  email        String?
+  phone        String?
+  departmentId Int?     @map("department_id")
+  status       String   @default("active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  department Department? @relation(fields: [departmentId], references: [id])
+  userRoles  UserRole[]
+
+  @@map("users")
+}
+
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String
+  code        String   @unique
+  sortOrder   Int      @default(0) @map("sort_order")
+  status      String   @default("active")
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          Int      @id @default(autoincrement())
+  name        String
+  code        String   @unique
+  type        String
+  sortOrder   Int      @default(0) @map("sort_order")
+  status      String   @default("active")
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model Department {
+  id          Int      @id @default(autoincrement())
+  name        String
+  code        String   @unique
+  parentId    Int?     @map("parent_id")
+  manager     String?
+  phone       String?
+  email       String?
+  sortOrder   Int      @default(0) @map("sort_order")
+  status      String   @default("active")
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  parent   Department?  @relation("DepartmentToDepartment", fields: [parentId], references: [id])
+  children Department[] @relation("DepartmentToDepartment")
+  users    User[]
+
+  @@map("departments")
+}
+
+model Menu {
+  id             Int      @id @default(autoincrement())
+  name           String
+  path           String?
+  icon           String?
+  parentId       Int?     @map("parent_id")
+  type           String
+  permissionCode String?  @map("permission_code")
+  sortOrder      Int      @default(0) @map("sort_order")
+  status         String   @default("active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  parent   Menu?  @relation("MenuToMenu", fields: [parentId], references: [id])
+  children Menu[] @relation("MenuToMenu")
+
+  @@map("menus")
+}
+
+model UserRole {
+  userId Int @map("user_id")
+  roleId Int @map("role_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       Int @map("role_id")
+  permissionId Int @map("permission_id")
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}

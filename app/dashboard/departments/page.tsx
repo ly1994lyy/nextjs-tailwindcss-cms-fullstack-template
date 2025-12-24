@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Pencil, Trash2, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,139 +23,145 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/lib/auth-context"
+import { toast } from "sonner"
 
 interface Department {
-  id: string
+  id: number
   name: string
-  description: string
-  parentId: string | null
+  code: string
+  description: string | null
+  parentId: number | null
   parentName?: string
-  memberCount: number
+  manager: string | null
+  phone: string | null
+  email: string | null
+  userCount: number
   createdAt: string
+  updatedAt: string
 }
-
-const mockDepartments: Department[] = [
-  {
-    id: "1",
-    name: "技术部",
-    description: "负责产品研发",
-    parentId: null,
-    memberCount: 45,
-    createdAt: "2024-01-15",
-  },
-  {
-    id: "2",
-    name: "前端组",
-    description: "前端开发团队",
-    parentId: "1",
-    parentName: "技术部",
-    memberCount: 15,
-    createdAt: "2024-01-20",
-  },
-  {
-    id: "3",
-    name: "后端组",
-    description: "后端开发团队",
-    parentId: "1",
-    parentName: "技术部",
-    memberCount: 20,
-    createdAt: "2024-01-20",
-  },
-  {
-    id: "4",
-    name: "市场部",
-    description: "市场营销与推广",
-    parentId: null,
-    memberCount: 28,
-    createdAt: "2024-01-15",
-  },
-  {
-    id: "5",
-    name: "人力资源部",
-    description: "人事管理",
-    parentId: null,
-    memberCount: 12,
-    createdAt: "2024-01-15",
-  },
-]
 
 export default function DepartmentsPage() {
   const { hasPermission } = useAuth()
-  const [departments, setDepartments] = useState<Department[]>(mockDepartments)
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null)
-  const [deletingDepartmentId, setDeletingDepartmentId] = useState<string | null>(null)
+  const [deletingDepartmentId, setDeletingDepartmentId] = useState<number | null>(null)
   const [formData, setFormData] = useState({
     name: "",
+    code: "",
     description: "",
     parentId: "",
+    manager: "",
+    phone: "",
+    email: "",
   })
 
   const canWrite = hasPermission("department:write") || hasPermission("*")
   const canDelete = hasPermission("department:delete") || hasPermission("*")
 
-  const filteredDepartments = departments.filter(
-    (dept) =>
-      dept.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      dept.description.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  const fetchDepartments = async () => {
+    try {
+      setLoading(true)
+      const res = await fetch(`/api/departments?search=${searchQuery}`)
+      if (!res.ok) throw new Error("Failed to fetch")
+      const data = await res.json()
+      setDepartments(data)
+    } catch (error) {
+      console.error(error)
+      toast.error("获取部门列表失败")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchDepartments()
+  }, [searchQuery])
 
   const handleOpenDialog = (department?: Department) => {
     if (department) {
       setEditingDepartment(department)
       setFormData({
         name: department.name,
-        description: department.description,
-        parentId: department.parentId || "",
+        code: department.code,
+        description: department.description || "",
+        parentId: department.parentId?.toString() || "",
+        manager: department.manager || "",
+        phone: department.phone || "",
+        email: department.email || "",
       })
     } else {
       setEditingDepartment(null)
-      setFormData({ name: "", description: "", parentId: "" })
+      setFormData({
+        name: "",
+        code: "",
+        description: "",
+        parentId: "",
+        manager: "",
+        phone: "",
+        email: "",
+      })
     }
     setDialogOpen(true)
   }
 
-  const handleSave = () => {
-    if (editingDepartment) {
-      setDepartments(
-        departments.map((dept) =>
-          dept.id === editingDepartment.id
-            ? {
-                ...dept,
-                name: formData.name,
-                description: formData.description,
-                parentId: formData.parentId || null,
-                parentName: formData.parentId
-                  ? departments.find((d) => d.id === formData.parentId)?.name
-                  : undefined,
-              }
-            : dept,
-        ),
-      )
-    } else {
-      const newDepartment: Department = {
-        id: Date.now().toString(),
-        name: formData.name,
-        description: formData.description,
-        parentId: formData.parentId || null,
-        parentName: formData.parentId
-          ? departments.find((d) => d.id === formData.parentId)?.name
-          : undefined,
-        memberCount: 0,
-        createdAt: new Date().toISOString().split("T")[0],
+  const handleSave = async () => {
+    try {
+      if (!formData.name || !formData.code) {
+        toast.error("部门名称和编码不能为空")
+        return
       }
-      setDepartments([...departments, newDepartment])
+
+      const method = editingDepartment ? "PUT" : "POST"
+      const body = {
+        ...formData,
+        id: editingDepartment?.id,
+      }
+
+      const res = await fetch("/api/departments", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || "操作失败")
+      }
+
+      toast.success(editingDepartment ? "更新成功" : "创建成功")
+      setDialogOpen(false)
+      fetchDepartments()
+    } catch (error: any) {
+      console.error(error)
+      toast.error(error.message)
     }
-    setDialogOpen(false)
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deletingDepartmentId) {
-      setDepartments(departments.filter((dept) => dept.id !== deletingDepartmentId))
-      setDeleteDialogOpen(false)
-      setDeletingDepartmentId(null)
+      try {
+        const res = await fetch(`/api/departments?id=${deletingDepartmentId}`, {
+          method: "DELETE",
+        })
+        const data = await res.json()
+
+        if (!res.ok) {
+          throw new Error(data.error || "删除失败")
+        }
+
+        toast.success("删除成功")
+        setDeleteDialogOpen(false)
+        setDeletingDepartmentId(null)
+        fetchDepartments()
+      } catch (error: any) {
+        console.error(error)
+        toast.error(error.message)
+      }
     }
   }
 
@@ -190,87 +196,113 @@ export default function DepartmentsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>部门名称</TableHead>
-                <TableHead>描述</TableHead>
-                <TableHead>上级部门</TableHead>
-                <TableHead>成员数量</TableHead>
-                <TableHead>创建时间</TableHead>
-                {(canWrite || canDelete) && <TableHead className="text-right">操作</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredDepartments.map((department) => (
-                <TableRow key={department.id}>
-                  <TableCell className="font-medium">{department.name}</TableCell>
-                  <TableCell>{department.description}</TableCell>
-                  <TableCell>{department.parentName || "-"}</TableCell>
-                  <TableCell>{department.memberCount}</TableCell>
-                  <TableCell>{department.createdAt}</TableCell>
-                  {(canWrite || canDelete) && (
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {canWrite && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenDialog(department)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {canDelete && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setDeletingDepartmentId(department.id)
-                              setDeleteDialogOpen(true)
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  )}
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>部门名称</TableHead>
+                  <TableHead>编码</TableHead>
+                  <TableHead>上级部门</TableHead>
+                  <TableHead>负责人</TableHead>
+                  <TableHead>成员数量</TableHead>
+                  <TableHead>创建时间</TableHead>
+                  {(canWrite || canDelete) && <TableHead className="text-right">操作</TableHead>}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      加载中...
+                    </TableCell>
+                  </TableRow>
+                ) : departments.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      暂无数据
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  departments.map((department) => (
+                    <TableRow key={department.id}>
+                      <TableCell className="font-medium">
+                        <div>{department.name}</div>
+                        <div className="text-muted-foreground text-xs">
+                          {department.description}
+                        </div>
+                      </TableCell>
+                      <TableCell>{department.code}</TableCell>
+                      <TableCell>{department.parentName || "-"}</TableCell>
+                      <TableCell>{department.manager || "-"}</TableCell>
+                      <TableCell>{department.userCount}</TableCell>
+                      <TableCell>{new Date(department.createdAt).toLocaleDateString()}</TableCell>
+                      {(canWrite || canDelete) && (
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            {canWrite && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleOpenDialog(department)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setDeletingDepartmentId(department.id)
+                                  setDeleteDialogOpen(true)
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>{editingDepartment ? "编辑部门" : "添加部门"}</DialogTitle>
             <DialogDescription>
               {editingDepartment ? "修改部门信息" : "创建新的部门"}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">部门名称</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="请输入部门名称"
-              />
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">部门名称</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="请输入部门名称"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="code">部门编码</Label>
+                <Input
+                  id="code"
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                  placeholder="请输入部门编码"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">描述</Label>
-              <Input
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="请输入部门描述"
-              />
-            </div>
+
             <div className="space-y-2">
               <Label htmlFor="parent">上级部门</Label>
               <select
@@ -288,6 +320,48 @@ export default function DepartmentsPage() {
                     </option>
                   ))}
               </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="manager">负责人</Label>
+                <Input
+                  id="manager"
+                  value={formData.manager}
+                  onChange={(e) => setFormData({ ...formData, manager: e.target.value })}
+                  placeholder="请输入负责人"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">联系电话</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="请输入联系电话"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">邮箱</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="请输入邮箱"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">描述</Label>
+              <Input
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="请输入部门描述"
+              />
             </div>
           </div>
           <DialogFooter>

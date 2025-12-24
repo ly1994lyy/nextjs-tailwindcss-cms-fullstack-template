@@ -180,6 +180,9 @@ importers:
       '@types/node':
         specifier: ^22
         version: 22.0.0
+      '@types/pg':
+        specifier: ^8.16.0
+        version: 8.16.0
       '@types/react':
         specifier: ^19
         version: 19.0.0
@@ -3754,7 +3757,7 @@ snapshots:
 
   '@types/pg@8.16.0':
     dependencies:
-      '@types/node': 22.0.0
+      '@types/node': 22.19.2
       pg-protocol: 1.10.3
       pg-types: 2.2.0
 

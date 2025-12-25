@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Pencil, Trash2, Search, Mail, Phone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,116 +24,107 @@ import {
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth-context"
+import { toast } from "sonner"
+
+interface Role {
+  id: number
+  name: string
+  code: string
+}
 
 interface User {
-  id: string
+  id: number
   username: string
-  name: string
-  email: string
-  phone: string
-  departmentId: string
-  departmentName: string
-  roleId: string
-  roleName: string
-  status: "active" | "inactive"
+  realName: string
+  email: string | null
+  phone: string | null
+  departmentId: number | null
+  departmentName?: string
+  roles: Role[]
+  status: "active" | "inactive" | string
   createdAt: string
 }
 
-const mockUsers: User[] = [
-  {
-    id: "1",
-    username: "admin",
-    name: "系统管理员",
-    email: "admin@example.com",
-    phone: "13800138000",
-    departmentId: "1",
-    departmentName: "技术部",
-    roleId: "1",
-    roleName: "管理员",
-    status: "active",
-    createdAt: "2024-01-15",
-  },
-  {
-    id: "2",
-    username: "zhangsan",
-    name: "张三",
-    email: "zhangsan@example.com",
-    phone: "13800138001",
-    departmentId: "2",
-    departmentName: "前端组",
-    roleId: "2",
-    roleName: "开发人员",
-    status: "active",
-    createdAt: "2024-02-01",
-  },
-  {
-    id: "3",
-    username: "lisi",
-    name: "李四",
-    email: "lisi@example.com",
-    phone: "13800138002",
-    departmentId: "3",
-    departmentName: "后端组",
-    roleId: "2",
-    roleName: "开发人员",
-    status: "active",
-    createdAt: "2024-02-05",
-  },
-  {
-    id: "4",
-    username: "wangwu",
-    name: "王五",
-    email: "wangwu@example.com",
-    phone: "13800138003",
-    departmentId: "4",
-    departmentName: "市场部",
-    roleId: "3",
-    roleName: "普通员工",
-    status: "inactive",
-    createdAt: "2024-02-10",
-  },
-]
-
-const mockDepartments = [
-  { id: "1", name: "技术部" },
-  { id: "2", name: "前端组" },
-  { id: "3", name: "后端组" },
-  { id: "4", name: "市场部" },
-  { id: "5", name: "人力资源部" },
-]
-
-const mockRoles = [
-  { id: "1", name: "管理员" },
-  { id: "2", name: "开发人员" },
-  { id: "3", name: "普通员工" },
-]
+interface Department {
+  id: number
+  name: string
+}
 
 export default function UsersPage() {
   const { hasPermission } = useAuth()
-  const [users, setUsers] = useState<User[]>(mockUsers)
+  const [users, setUsers] = useState<User[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [roles, setRoles] = useState<Role[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
+  const [deletingUserId, setDeletingUserId] = useState<number | null>(null)
   const [formData, setFormData] = useState({
     username: "",
-    name: "",
+    realName: "",
     email: "",
     phone: "",
     departmentId: "",
     roleId: "",
     password: "",
+    status: "active",
   })
 
+  // Perms check - temporary workaround if auth isn't fully ready, defaulting to true or checking specific perms
   const canWrite = hasPermission("user:write") || hasPermission("*")
   const canDelete = hasPermission("user:delete") || hasPermission("*")
 
+  useEffect(() => {
+    fetchUsers()
+    fetchDepartments()
+    fetchRoles()
+  }, [])
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch("/api/users")
+      if (res.ok) {
+        const data = await res.json()
+        setUsers(data)
+      } else {
+        toast.error("获取用户列表失败")
+      }
+    } catch (error) {
+      console.error(error)
+      toast.error("获取用户列表失败")
+    }
+  }
+
+  const fetchDepartments = async () => {
+    try {
+      const res = await fetch("/api/departments")
+      if (res.ok) {
+        const data = await res.json()
+        setDepartments(data)
+      }
+    } catch (error) {
+      console.error("Failed to fetch departments", error)
+    }
+  }
+
+  const fetchRoles = async () => {
+    try {
+      const res = await fetch("/api/roles")
+      if (res.ok) {
+        const data = await res.json()
+        setRoles(data)
+      }
+    } catch (error) {
+      console.error("Failed to fetch roles", error)
+    }
+  }
+
   const filteredUsers = users.filter(
     (user) =>
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.realName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()),
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
   const handleOpenDialog = (user?: User) => {
@@ -141,72 +132,95 @@ export default function UsersPage() {
       setEditingUser(user)
       setFormData({
         username: user.username,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        departmentId: user.departmentId,
-        roleId: user.roleId,
+        realName: user.realName,
+        email: user.email || "",
+        phone: user.phone || "",
+        departmentId: user.departmentId?.toString() || "",
+        roleId: user.roles && user.roles.length > 0 ? user.roles[0].id.toString() : "",
         password: "",
+        status: user.status,
       })
     } else {
       setEditingUser(null)
       setFormData({
         username: "",
-        name: "",
+        realName: "",
         email: "",
         phone: "",
         departmentId: "",
         roleId: "",
         password: "",
+        status: "active",
       })
     }
     setDialogOpen(true)
   }
 
-  const handleSave = () => {
-    if (editingUser) {
-      setUsers(
-        users.map((user) =>
-          user.id === editingUser.id
-            ? {
-                ...user,
-                username: formData.username,
-                name: formData.name,
-                email: formData.email,
-                phone: formData.phone,
-                departmentId: formData.departmentId,
-                departmentName:
-                  mockDepartments.find((d) => d.id === formData.departmentId)?.name || "",
-                roleId: formData.roleId,
-                roleName: mockRoles.find((r) => r.id === formData.roleId)?.name || "",
-              }
-            : user,
-        ),
-      )
-    } else {
-      const newUser: User = {
-        id: Date.now().toString(),
+  const handleSave = async () => {
+    try {
+      const url = "/api/users"
+      const method = editingUser ? "PUT" : "POST"
+      const body: any = {
         username: formData.username,
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        departmentId: formData.departmentId,
-        departmentName: mockDepartments.find((d) => d.id === formData.departmentId)?.name || "",
-        roleId: formData.roleId,
-        roleName: mockRoles.find((r) => r.id === formData.roleId)?.name || "",
-        status: "active",
-        createdAt: new Date().toISOString().split("T")[0],
+        realName: formData.realName,
+        email: formData.email || null,
+        phone: formData.phone || null,
+        departmentId: formData.departmentId || null,
+        roleIds: formData.roleId ? [formData.roleId] : [], // Send as array
+        status: formData.status,
       }
-      setUsers([...users, newUser])
+
+      if (editingUser) {
+        body.id = editingUser.id
+        // Only include password if it's set
+        if (formData.password) {
+          body.password = formData.password
+        }
+      } else {
+        body.password = formData.password // Required for create
+      }
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      })
+
+      if (res.ok) {
+        toast.success(editingUser ? "用户更新成功" : "用户创建成功")
+        setDialogOpen(false)
+        fetchUsers()
+      } else {
+        const errorData = await res.json()
+        toast.error(errorData.error || "操作失败")
+      }
+    } catch (error) {
+      console.error(error)
+      toast.error("操作失败")
     }
-    setDialogOpen(false)
   }
 
-  const handleDelete = () => {
-    if (deletingUserId) {
-      setUsers(users.filter((user) => user.id !== deletingUserId))
-      setDeleteDialogOpen(false)
-      setDeletingUserId(null)
+  const handleDelete = async () => {
+    if (!deletingUserId) return
+
+    try {
+      const res = await fetch(`/api/users?id=${deletingUserId}`, {
+        method: "DELETE",
+      })
+
+      if (res.ok) {
+        toast.success("用户删除成功")
+        setDeleteDialogOpen(false)
+        setDeletingUserId(null)
+        fetchUsers()
+      } else {
+        toast.error("删除失败")
+      }
+    } catch (error) {
+      console.error(error)
+      toast.error("删除失败")
     }
   }
 
@@ -258,27 +272,33 @@ export default function UsersPage() {
               {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.username}</TableCell>
-                  <TableCell>{user.name}</TableCell>
+                  <TableCell>{user.realName}</TableCell>
                   <TableCell>
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Mail className="text-muted-foreground h-3 w-3" />
-                        {user.email}
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Phone className="text-muted-foreground h-3 w-3" />
-                        {user.phone}
-                      </div>
+                      {user.email && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="text-muted-foreground h-3 w-3" />
+                          {user.email}
+                        </div>
+                      )}
+                      {user.phone && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="text-muted-foreground h-3 w-3" />
+                          {user.phone}
+                        </div>
+                      )}
                     </div>
                   </TableCell>
-                  <TableCell>{user.departmentName}</TableCell>
-                  <TableCell>{user.roleName}</TableCell>
+                  <TableCell>{user.departmentName || "-"}</TableCell>
+                  <TableCell>
+                    {(user.roles && user.roles.map((r) => r.name).join(", ")) || "-"}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={user.status === "active" ? "default" : "secondary"}>
                       {user.status === "active" ? "正常" : "停用"}
                     </Badge>
                   </TableCell>
-                  <TableCell>{user.createdAt}</TableCell>
+                  <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                   {(canWrite || canDelete) && (
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -334,11 +354,11 @@ export default function UsersPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="name">姓名</Label>
+              <Label htmlFor="realName">姓名</Label>
               <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                id="realName"
+                value={formData.realName}
+                onChange={(e) => setFormData({ ...formData, realName: e.target.value })}
                 placeholder="请输入姓名"
               />
             </div>
@@ -370,7 +390,7 @@ export default function UsersPage() {
                 className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 <option value="">请选择部门</option>
-                {mockDepartments.map((dept) => (
+                {departments.map((dept) => (
                   <option key={dept.id} value={dept.id}>
                     {dept.name}
                   </option>
@@ -386,15 +406,27 @@ export default function UsersPage() {
                 className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
               >
                 <option value="">请选择角色</option>
-                {mockRoles.map((role) => (
+                {roles.map((role) => (
                   <option key={role.id} value={role.id}>
                     {role.name}
                   </option>
                 ))}
               </select>
             </div>
-            {!editingUser && (
-              <div className="col-span-2 space-y-2">
+            <div className="space-y-2">
+              <Label htmlFor="status">状态</Label>
+              <select
+                id="status"
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+              >
+                <option value="active">正常</option>
+                <option value="inactive">停用</option>
+              </select>
+            </div>
+            {!editingUser ? (
+              <div className="col-span-1 space-y-2">
                 <Label htmlFor="password">密码</Label>
                 <Input
                   id="password"
@@ -402,6 +434,17 @@ export default function UsersPage() {
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder="请输入初始密码"
+                />
+              </div>
+            ) : (
+              <div className="col-span-1 space-y-2">
+                <Label htmlFor="password">密码 (留空不修改)</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="请输入新密码"
                 />
               </div>
             )}

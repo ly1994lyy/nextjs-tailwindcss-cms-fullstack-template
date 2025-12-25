@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import prisma from "@/lib/prisma"
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,36 +7,40 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search")
     const type = searchParams.get("type")
 
-    const conditions = []
+    const where: any = {}
 
     if (search) {
-      conditions.push(sql`(p.name ILIKE ${`%${search}%`} OR p.code ILIKE ${`%${search}%`})`)
+      where.OR = [
+        { name: { contains: search, mode: "insensitive" } },
+        { code: { contains: search, mode: "insensitive" } },
+      ]
     }
 
     if (type) {
-      conditions.push(sql`p.type = ${type}`)
+      where.type = type
     }
 
-    const whereClause =
-      conditions.length > 0 ? sql`WHERE ${sql.join(conditions, sql` AND `)}` : sql``
+    const permissions = await prisma.permission.findMany({
+      where,
+      include: {
+        rolePermissions: {
+          include: {
+            role: true,
+          },
+        },
+      },
+      orderBy: {
+        sortOrder: "asc",
+      },
+    })
 
-    const permissions = await sql`
-      SELECT p.*,
-        COALESCE(
-          json_agg(
-            json_build_object('id', r.id, 'name', r.name, 'code', r.code)
-          ) FILTER (WHERE r.id IS NOT NULL),
-          '[]'
-        ) as roles
-      FROM permissions p
-      LEFT JOIN role_permissions rp ON p.id = rp.permission_id
-      LEFT JOIN roles r ON rp.role_id = r.id
-      ${whereClause}
-      GROUP BY p.id
-      ORDER BY p.sort_order, p.id
-    `
+    const formattedPermissions = permissions.map((p) => ({
+      ...p,
+      roleCount: p.rolePermissions.length,
+      roles: p.rolePermissions.map((rp) => rp.role),
+    }))
 
-    return NextResponse.json(permissions)
+    return NextResponse.json(formattedPermissions)
   } catch (error) {
     console.error("[v0] Get permissions error:", error)
     return NextResponse.json({ error: "获取权限列表失败" }, { status: 500 })
@@ -52,18 +56,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "权限名称、编码和类型不能为空" }, { status: 400 })
     }
 
-    const result = await sql`
-      INSERT INTO permissions (name, code, type, sort_order, status, description)
-      VALUES (${name}, ${code}, ${type}, ${sortOrder || 0}, ${status || "active"}, ${description || null})
-      RETURNING *
-    `
+    // Check existing
+    const existing = await prisma.permission.findUnique({
+      where: { code },
+    })
 
-    return NextResponse.json(result[0], { status: 201 })
-  } catch (error: any) {
-    console.error("[v0] Create permission error:", error)
-    if (error.code === "23505") {
+    if (existing) {
       return NextResponse.json({ error: "权限编码已存在" }, { status: 400 })
     }
+
+    const permission = await prisma.permission.create({
+      data: {
+        name,
+        code,
+        type,
+        sortOrder: sortOrder || 0,
+        status: status || "active",
+        description,
+      },
+    })
+
+    return NextResponse.json(permission, { status: 201 })
+  } catch (error) {
+    console.error("[v0] Create permission error:", error)
     return NextResponse.json({ error: "创建权限失败" }, { status: 500 })
   }
 }
@@ -77,23 +92,22 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "ID、权限名称、编码和类型不能为空" }, { status: 400 })
     }
 
-    const result = await sql`
-      UPDATE permissions
-      SET name = ${name}, code = ${code}, type = ${type}, sort_order = ${sortOrder || 0}, 
-          status = ${status}, description = ${description || null},
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${id}
-      RETURNING *
-    `
+    const permission = await prisma.permission.update({
+      where: { id: parseInt(id) },
+      data: {
+        name,
+        code,
+        type,
+        sortOrder: sortOrder || 0,
+        status,
+        description,
+      },
+    })
 
-    if (result.length === 0) {
-      return NextResponse.json({ error: "权限不存在" }, { status: 404 })
-    }
-
-    return NextResponse.json(result[0])
+    return NextResponse.json(permission)
   } catch (error: any) {
     console.error("[v0] Update permission error:", error)
-    if (error.code === "23505") {
+    if (error.code === "P2002") {
       return NextResponse.json({ error: "权限编码已存在" }, { status: 400 })
     }
     return NextResponse.json({ error: "更新权限失败" }, { status: 500 })
@@ -109,16 +123,18 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "ID不能为空" }, { status: 400 })
     }
 
-    // 检查是否有角色使用该权限
-    const roles = await sql`
-      SELECT COUNT(*) as count FROM role_permissions WHERE permission_id = ${id}
-    `
+    // Check usage
+    const roleCount = await prisma.rolePermission.count({
+      where: { permissionId: parseInt(id) },
+    })
 
-    if (roles[0].count > 0) {
+    if (roleCount > 0) {
       return NextResponse.json({ error: "该权限已被角色使用，无法删除" }, { status: 400 })
     }
 
-    await sql`DELETE FROM permissions WHERE id = ${id}`
+    await prisma.permission.delete({
+      where: { id: parseInt(id) },
+    })
 
     return NextResponse.json({ message: "删除成功" })
   } catch (error) {

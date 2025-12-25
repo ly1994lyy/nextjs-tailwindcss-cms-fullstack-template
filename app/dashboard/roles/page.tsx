@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Pencil, Trash2, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,87 +25,85 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth-context"
+import { toast } from "sonner"
 
-interface Role {
-  id: string
+interface Permission {
+  id: number
   name: string
-  description: string
-  permissions: string[]
-  userCount: number
-  createdAt: string
+  code: string
+  type: string
 }
 
-const mockRoles: Role[] = [
-  {
-    id: "1",
-    name: "超级管理员",
-    description: "拥有系统所有权限",
-    permissions: ["*"],
-    userCount: 2,
-    createdAt: "2024-01-15",
-  },
-  {
-    id: "2",
-    name: "部门管理员",
-    description: "管理部门和用户",
-    permissions: ["department:read", "department:write", "user:read", "user:write"],
-    userCount: 5,
-    createdAt: "2024-01-20",
-  },
-  {
-    id: "3",
-    name: "开发人员",
-    description: "一般开发权限",
-    permissions: ["department:read", "user:read"],
-    userCount: 45,
-    createdAt: "2024-01-25",
-  },
-  {
-    id: "4",
-    name: "普通员工",
-    description: "基本查看权限",
-    permissions: ["department:read"],
-    userCount: 104,
-    createdAt: "2024-02-01",
-  },
-]
-
-const availablePermissions = [
-  { id: "department:read", name: "查看部门", category: "部门管理" },
-  { id: "department:write", name: "编辑部门", category: "部门管理" },
-  { id: "department:delete", name: "删除部门", category: "部门管理" },
-  { id: "user:read", name: "查看用户", category: "用户管理" },
-  { id: "user:write", name: "编辑用户", category: "用户管理" },
-  { id: "user:delete", name: "删除用户", category: "用户管理" },
-  { id: "role:read", name: "查看角色", category: "角色管理" },
-  { id: "role:write", name: "编辑角色", category: "角色管理" },
-  { id: "role:delete", name: "删除角色", category: "角色管理" },
-  { id: "permission:read", name: "查看权限", category: "权限管理" },
-  { id: "permission:write", name: "编辑权限", category: "权限管理" },
-  { id: "permission:delete", name: "删除权限", category: "权限管理" },
-]
+interface Role {
+  id: number
+  name: string
+  code: string
+  description: string | null
+  permissions: Permission[]
+  userCount: number
+  createdAt: string
+  status: string
+}
 
 export default function RolesPage() {
   const { hasPermission } = useAuth()
-  const [roles, setRoles] = useState<Role[]>(mockRoles)
+  const [roles, setRoles] = useState<Role[]>([])
+  const [availablePermissions, setAvailablePermissions] = useState<Permission[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [editingRole, setEditingRole] = useState<Role | null>(null)
-  const [deletingRoleId, setDeletingRoleId] = useState<string | null>(null)
+  const [deletingRoleId, setDeletingRoleId] = useState<number | null>(null)
   const [formData, setFormData] = useState({
     name: "",
+    code: "",
     description: "",
-    permissions: [] as string[],
+    permissions: [] as number[],
+    status: "active",
   })
 
   const canWrite = hasPermission("role:write") || hasPermission("*")
   const canDelete = hasPermission("role:delete") || hasPermission("*")
 
+  useEffect(() => {
+    fetchRoles()
+    fetchPermissions()
+  }, [])
+
+  const fetchRoles = async () => {
+    try {
+      const res = await fetch("/api/roles")
+      if (res.ok) {
+        const data = await res.json()
+        setRoles(data)
+      } else {
+        toast.error("获取角色列表失败")
+      }
+    } catch (error) {
+      console.error(error)
+      toast.error("获取角色列表失败")
+    }
+  }
+
+  const fetchPermissions = async () => {
+    try {
+      const res = await fetch("/api/permissions")
+      if (res.ok) {
+        const data = await res.json()
+        setAvailablePermissions(data)
+      } else {
+        toast.error("获取权限列表失败")
+      }
+    } catch (error) {
+      console.error("Failed to fetch permissions", error)
+    }
+  }
+
   const filteredRoles = roles.filter(
     (role) =>
       role.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      role.description.toLowerCase().includes(searchQuery.toLowerCase()),
+      role.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      role.code.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
   const handleOpenDialog = (role?: Role) => {
@@ -113,17 +111,19 @@ export default function RolesPage() {
       setEditingRole(role)
       setFormData({
         name: role.name,
-        description: role.description,
-        permissions: [...role.permissions],
+        code: role.code,
+        description: role.description || "",
+        status: role.status,
+        permissions: role.permissions.map((p) => p.id),
       })
     } else {
       setEditingRole(null)
-      setFormData({ name: "", description: "", permissions: [] })
+      setFormData({ name: "", code: "", description: "", status: "active", permissions: [] })
     }
     setDialogOpen(true)
   }
 
-  const handleTogglePermission = (permissionId: string) => {
+  const handleTogglePermission = (permissionId: number) => {
     setFormData({
       ...formData,
       permissions: formData.permissions.includes(permissionId)
@@ -132,51 +132,76 @@ export default function RolesPage() {
     })
   }
 
-  const handleSave = () => {
-    if (editingRole) {
-      setRoles(
-        roles.map((role) =>
-          role.id === editingRole.id
-            ? {
-                ...role,
-                name: formData.name,
-                description: formData.description,
-                permissions: formData.permissions,
-              }
-            : role,
-        ),
-      )
-    } else {
-      const newRole: Role = {
-        id: Date.now().toString(),
+  const handleSave = async () => {
+    try {
+      const url = "/api/roles"
+      const method = editingRole ? "PUT" : "POST"
+      const body: any = {
         name: formData.name,
+        code: formData.code,
         description: formData.description,
-        permissions: formData.permissions,
-        userCount: 0,
-        createdAt: new Date().toISOString().split("T")[0],
+        status: formData.status,
+        permissionIds: formData.permissions,
       }
-      setRoles([...roles, newRole])
+
+      if (editingRole) {
+        body.id = editingRole.id
+      }
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      })
+
+      if (res.ok) {
+        toast.success(editingRole ? "角色更新成功" : "角色创建成功")
+        setDialogOpen(false)
+        fetchRoles()
+      } else {
+        const errorData = await res.json()
+        toast.error(errorData.error || "操作失败")
+      }
+    } catch (error) {
+      console.error(error)
+      toast.error("操作失败")
     }
-    setDialogOpen(false)
   }
 
-  const handleDelete = () => {
-    if (deletingRoleId) {
-      setRoles(roles.filter((role) => role.id !== deletingRoleId))
-      setDeleteDialogOpen(false)
-      setDeletingRoleId(null)
+  const handleDelete = async () => {
+    if (!deletingRoleId) return
+
+    try {
+      const res = await fetch(`/api/roles?id=${deletingRoleId}`, {
+        method: "DELETE",
+      })
+
+      if (res.ok) {
+        toast.success("角色删除成功")
+        setDeleteDialogOpen(false)
+        setDeletingRoleId(null)
+        fetchRoles()
+      } else {
+        const errorData = await res.json()
+        toast.error(errorData.error || "删除失败")
+      }
+    } catch (error) {
+      console.error(error)
+      toast.error("删除失败")
     }
   }
 
   const groupedPermissions = availablePermissions.reduce(
     (acc, permission) => {
-      if (!acc[permission.category]) {
-        acc[permission.category] = []
+      if (!acc[permission.type]) {
+        acc[permission.type] = []
       }
-      acc[permission.category].push(permission)
+      acc[permission.type].push(permission)
       return acc
     },
-    {} as Record<string, typeof availablePermissions>,
+    {} as Record<string, Permission[]>,
   )
 
   return (
@@ -214,6 +239,7 @@ export default function RolesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>角色名称</TableHead>
+                <TableHead>编码</TableHead>
                 <TableHead>描述</TableHead>
                 <TableHead>权限</TableHead>
                 <TableHead>用户数量</TableHead>
@@ -225,25 +251,27 @@ export default function RolesPage() {
               {filteredRoles.map((role) => (
                 <TableRow key={role.id}>
                   <TableCell className="font-medium">{role.name}</TableCell>
+                  <TableCell>{role.code}</TableCell>
                   <TableCell>{role.description}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {role.permissions.includes("*") ? (
+                      {role.permissions.some((p) => p.code === "*") ? (
                         <Badge>所有权限</Badge>
                       ) : (
                         role.permissions.slice(0, 3).map((perm) => (
-                          <Badge key={perm} variant="secondary">
-                            {availablePermissions.find((p) => p.id === perm)?.name || perm}
+                          <Badge key={perm.id} variant="secondary">
+                            {perm.name}
                           </Badge>
                         ))
                       )}
-                      {role.permissions.length > 3 && !role.permissions.includes("*") && (
-                        <Badge variant="outline">+{role.permissions.length - 3}</Badge>
-                      )}
+                      {role.permissions.length > 3 &&
+                        !role.permissions.some((p) => p.code === "*") && (
+                          <Badge variant="outline">+{role.permissions.length - 3}</Badge>
+                        )}
                     </div>
                   </TableCell>
                   <TableCell>{role.userCount}</TableCell>
-                  <TableCell>{role.createdAt}</TableCell>
+                  <TableCell>{new Date(role.createdAt).toLocaleDateString()}</TableCell>
                   {(canWrite || canDelete) && (
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
@@ -288,14 +316,25 @@ export default function RolesPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">角色名称</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="请输入角色名称"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">角色名称</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="请输入角色名称"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="code">角色编码</Label>
+                <Input
+                  id="code"
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                  placeholder="请输入角色编码"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">描述</Label>
@@ -305,6 +344,18 @@ export default function RolesPage() {
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="请输入角色描述"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status">状态</Label>
+              <select
+                id="status"
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+              >
+                <option value="active">正常</option>
+                <option value="inactive">停用</option>
+              </select>
             </div>
             <div className="space-y-3">
               <Label>权限配置</Label>
@@ -316,12 +367,12 @@ export default function RolesPage() {
                       {permissions.map((permission) => (
                         <div key={permission.id} className="flex items-center space-x-2">
                           <Checkbox
-                            id={permission.id}
+                            id={permission.id.toString()}
                             checked={formData.permissions.includes(permission.id)}
                             onCheckedChange={() => handleTogglePermission(permission.id)}
                           />
                           <label
-                            htmlFor={permission.id}
+                            htmlFor={permission.id.toString()}
                             className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                           >
                             {permission.name}

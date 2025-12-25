@@ -1,30 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import prisma from "@/lib/prisma"
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const search = searchParams.get("search")
 
-    let query
+    const where: any = {}
+
     if (search) {
-      query = sql`
-        SELECT m.*,
-          (SELECT name FROM menus WHERE id = m.parent_id) as parent_name
-        FROM menus m
-        WHERE m.name ILIKE ${`%${search}%`}
-        ORDER BY m.sort_order, m.id
-      `
-    } else {
-      query = sql`
-        SELECT m.*,
-          (SELECT name FROM menus WHERE id = m.parent_id) as parent_name
-        FROM menus m
-        ORDER BY m.sort_order, m.id
-      `
+      where.name = { contains: search, mode: "insensitive" }
     }
 
-    const menus = await query
+    const menus = await prisma.menu.findMany({
+      where,
+      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+    })
 
     return NextResponse.json(menus)
   } catch (error) {
@@ -42,14 +33,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "菜单名称和类型不能为空" }, { status: 400 })
     }
 
-    const result = await sql`
-      INSERT INTO menus (name, path, icon, parent_id, type, permission_code, sort_order, status)
-      VALUES (${name}, ${path || null}, ${icon || null}, ${parentId || null}, ${type}, 
-              ${permissionCode || null}, ${sortOrder || 0}, ${status || "active"})
-      RETURNING *
-    `
+    const menu = await prisma.menu.create({
+      data: {
+        name,
+        path: path || null,
+        icon: icon || null,
+        parentId: parentId ? parseInt(parentId) : null,
+        type,
+        permissionCode: permissionCode || null,
+        sortOrder: sortOrder || 0,
+        status: status || "active",
+      },
+    })
 
-    return NextResponse.json(result[0], { status: 201 })
+    return NextResponse.json(menu, { status: 201 })
   } catch (error) {
     console.error("[v0] Create menu error:", error)
     return NextResponse.json({ error: "创建菜单失败" }, { status: 500 })
@@ -65,23 +62,26 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "ID、菜单名称和类型不能为空" }, { status: 400 })
     }
 
-    const result = await sql`
-      UPDATE menus
-      SET name = ${name}, path = ${path || null}, icon = ${icon || null}, 
-          parent_id = ${parentId || null}, type = ${type}, permission_code = ${permissionCode || null},
-          sort_order = ${sortOrder || 0}, status = ${status},
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${id}
-      RETURNING *
-    `
+    const menu = await prisma.menu.update({
+      where: { id: parseInt(id) },
+      data: {
+        name,
+        path: path || null,
+        icon: icon || null,
+        parentId: parentId ? parseInt(parentId) : null,
+        type,
+        permissionCode: permissionCode || null,
+        sortOrder: sortOrder || 0,
+        status: status,
+      },
+    })
 
-    if (result.length === 0) {
+    return NextResponse.json(menu)
+  } catch (error: any) {
+    console.error("[v0] Update menu error:", error)
+    if (error.code === "P2025") {
       return NextResponse.json({ error: "菜单不存在" }, { status: 404 })
     }
-
-    return NextResponse.json(result[0])
-  } catch (error) {
-    console.error("[v0] Update menu error:", error)
     return NextResponse.json({ error: "更新菜单失败" }, { status: 500 })
   }
 }
@@ -95,16 +95,18 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "ID不能为空" }, { status: 400 })
     }
 
-    // 检查是否有子菜单
-    const children = await sql`
-      SELECT COUNT(*) as count FROM menus WHERE parent_id = ${id}
-    `
+    // Check if has children
+    const childCount = await prisma.menu.count({
+      where: { parentId: parseInt(id) },
+    })
 
-    if (children[0].count > 0) {
+    if (childCount > 0) {
       return NextResponse.json({ error: "该菜单下有子菜单，无法删除" }, { status: 400 })
     }
 
-    await sql`DELETE FROM menus WHERE id = ${id}`
+    await prisma.menu.delete({
+      where: { id: parseInt(id) },
+    })
 
     return NextResponse.json({ message: "删除成功" })
   } catch (error) {

@@ -22,20 +22,29 @@ export async function GET(request: NextRequest) {
       where.departmentId = parseInt(departmentId)
     }
 
-    const users = await prisma.user.findMany({
-      where,
-      include: {
-        department: true,
-        userRoles: {
-          include: {
-            role: true,
+    const page = parseInt(searchParams.get("page") || "1")
+    const pageSize = parseInt(searchParams.get("pageSize") || "10")
+    const skip = (page - 1) * pageSize
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        include: {
+          department: true,
+          userRoles: {
+            include: {
+              role: true,
+            },
           },
         },
-      },
-      orderBy: {
-        id: "asc",
-      },
-    })
+        orderBy: {
+          id: "asc",
+        },
+        skip,
+        take: pageSize,
+      }),
+      prisma.user.count({ where }),
+    ])
 
     // Transform data to flat structure if needed, or return as is.
     // Returning as is but keeping in mind the frontend needs customization
@@ -45,7 +54,13 @@ export async function GET(request: NextRequest) {
       roles: user.userRoles.map((ur) => ur.role),
     }))
 
-    return NextResponse.json(formattedUsers)
+    return NextResponse.json({
+      data: formattedUsers,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    })
   } catch (error) {
     console.error("[v0] Get users error:", error)
     return NextResponse.json({ error: "获取用户列表失败" }, { status: 500 })

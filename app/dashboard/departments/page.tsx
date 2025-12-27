@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Pencil, Trash2, Search } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, Loader2 } from "lucide-react"
+import { PaginationControls } from "@/components/pagination-controls"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -44,6 +45,9 @@ export default function DepartmentsPage() {
   const { hasPermission } = useAuth()
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
   const [searchQuery, setSearchQuery] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -65,10 +69,14 @@ export default function DepartmentsPage() {
   const fetchDepartments = async () => {
     try {
       setLoading(true)
-      const res = await fetch(`/api/departments?search=${searchQuery}`)
+      const res = await fetch(
+        `/api/departments?page=${currentPage}&pageSize=10&search=${searchQuery}`,
+      )
       if (!res.ok) throw new Error("Failed to fetch")
       const data = await res.json()
-      setDepartments(data)
+      setDepartments(data.data)
+      setTotalPages(data.totalPages)
+      setTotalCount(data.total)
     } catch (error) {
       console.error(error)
       toast.error("获取部门列表失败")
@@ -79,7 +87,7 @@ export default function DepartmentsPage() {
 
   useEffect(() => {
     fetchDepartments()
-  }, [searchQuery])
+  }, [currentPage, searchQuery])
 
   const handleOpenDialog = (department?: Department) => {
     if (department) {
@@ -200,20 +208,22 @@ export default function DepartmentsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>部门名称</TableHead>
-                  <TableHead>编码</TableHead>
-                  <TableHead>上级部门</TableHead>
-                  <TableHead>负责人</TableHead>
-                  <TableHead>成员数量</TableHead>
-                  <TableHead>创建时间</TableHead>
-                  {(canWrite || canDelete) && <TableHead className="text-right">操作</TableHead>}
+                  <TableHead className="text-center">部门名称</TableHead>
+                  <TableHead className="text-center">编码</TableHead>
+                  <TableHead className="text-center">上级部门</TableHead>
+                  <TableHead className="text-center">负责人</TableHead>
+                  <TableHead className="text-center">成员数量</TableHead>
+                  <TableHead className="text-center">创建时间</TableHead>
+                  {(canWrite || canDelete) && <TableHead className="text-center">操作</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center">
-                      加载中...
+                      <div className="flex justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : departments.length === 0 ? (
@@ -225,20 +235,22 @@ export default function DepartmentsPage() {
                 ) : (
                   departments.map((department) => (
                     <TableRow key={department.id}>
-                      <TableCell className="font-medium">
+                      <TableCell className="text-center font-medium">
                         <div>{department.name}</div>
                         <div className="text-muted-foreground text-xs">
                           {department.description}
                         </div>
                       </TableCell>
-                      <TableCell>{department.code}</TableCell>
-                      <TableCell>{department.parentName || "-"}</TableCell>
-                      <TableCell>{department.manager || "-"}</TableCell>
-                      <TableCell>{department.userCount}</TableCell>
-                      <TableCell>{new Date(department.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-center">{department.code}</TableCell>
+                      <TableCell className="text-center">{department.parentName || "-"}</TableCell>
+                      <TableCell className="text-center">{department.manager || "-"}</TableCell>
+                      <TableCell className="text-center">{department.userCount}</TableCell>
+                      <TableCell className="text-center">
+                        {new Date(department.createdAt).toLocaleDateString()}
+                      </TableCell>
                       {(canWrite || canDelete) && (
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
+                        <TableCell className="text-center">
+                          <div className="flex justify-center gap-2">
                             {canWrite && (
                               <Button
                                 variant="ghost"
@@ -270,6 +282,14 @@ export default function DepartmentsPage() {
             </Table>
           </div>
         </CardContent>
+        <div className="px-6 pb-6">
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            onPageChange={setCurrentPage}
+          />
+        </div>
       </Card>
 
       {/* Add/Edit Dialog */}

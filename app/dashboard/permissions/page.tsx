@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Pencil, Trash2, Search, Shield } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, Shield, Loader2 } from "lucide-react"
+import { PaginationControls } from "@/components/pagination-controls"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -42,6 +43,10 @@ const defaultCategories = ["部门管理", "用户管理", "角色管理", "权�
 export default function PermissionsPage() {
   const { hasPermission } = useAuth()
   const [permissions, setPermissions] = useState<Permission[]>([])
+  const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -62,35 +67,34 @@ export default function PermissionsPage() {
 
   useEffect(() => {
     fetchPermissions()
-  }, [])
+  }, [currentPage, searchQuery, selectedCategory])
 
   const fetchPermissions = async () => {
     try {
-      const res = await fetch("/api/permissions")
+      setLoading(true)
+      const typeParam = selectedCategory !== "all" ? `&type=${selectedCategory}` : ""
+      const res = await fetch(
+        `/api/permissions?page=${currentPage}&pageSize=10&search=${searchQuery}${typeParam}`,
+      )
       if (res.ok) {
         const data = await res.json()
-        setPermissions(data)
+        setPermissions(data.data)
+        setTotalPages(data.totalPages)
+        setTotalCount(data.total)
       } else {
         toast.error("获取权限列表失败")
       }
     } catch (error) {
       console.error(error)
       toast.error("获取权限列表失败")
+    } finally {
+      setLoading(false)
     }
   }
 
   const uniqueCategories = Array.from(
     new Set([...defaultCategories, ...permissions.map((p) => p.type)]),
   )
-
-  const filteredPermissions = permissions.filter((permission) => {
-    const matchesSearch =
-      permission.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      permission.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      permission.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || permission.type === selectedCategory
-    return matchesSearch && matchesCategory
-  })
 
   const categoryStats = uniqueCategories.reduce(
     (acc, category) => {
@@ -246,60 +250,92 @@ export default function PermissionsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>权限代码</TableHead>
-                <TableHead>权限名称</TableHead>
-                <TableHead>分类</TableHead>
-                <TableHead>描述</TableHead>
-                <TableHead>关联角色</TableHead>
-                <TableHead>创建时间</TableHead>
-                {(canWrite || canDelete) && <TableHead className="text-right">操作</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredPermissions.map((permission) => (
-                <TableRow key={permission.id}>
-                  <TableCell className="font-mono text-sm">{permission.code}</TableCell>
-                  <TableCell className="font-medium">{permission.name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{permission.type}</Badge>
-                  </TableCell>
-                  <TableCell className="max-w-xs truncate">{permission.description}</TableCell>
-                  <TableCell>{permission.roleCount} 个角色</TableCell>
-                  <TableCell>{new Date(permission.createdAt).toLocaleDateString()}</TableCell>
-                  {(canWrite || canDelete) && (
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {canWrite && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenDialog(permission)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {canDelete && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setDeletingPermissionId(permission.id)
-                              setDeleteDialogOpen(true)
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-center">权限代码</TableHead>
+                  <TableHead className="text-center">权限名称</TableHead>
+                  <TableHead className="text-center">分类</TableHead>
+                  <TableHead className="text-center">描述</TableHead>
+                  <TableHead className="text-center">关联角色</TableHead>
+                  <TableHead className="text-center">创建时间</TableHead>
+                  {(canWrite || canDelete) && <TableHead className="text-center">操作</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      <div className="flex justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin" />
                       </div>
                     </TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  </TableRow>
+                ) : permissions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      暂无数据
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  permissions.map((permission) => (
+                    <TableRow key={permission.id}>
+                      <TableCell className="text-center font-mono text-sm">
+                        {permission.code}
+                      </TableCell>
+                      <TableCell className="text-center font-medium">{permission.name}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline">{permission.type}</Badge>
+                      </TableCell>
+                      <TableCell className="max-w-xs truncate text-center">
+                        {permission.description}
+                      </TableCell>
+                      <TableCell className="text-center">{permission.roleCount} 个角色</TableCell>
+                      <TableCell className="text-center">
+                        {new Date(permission.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      {(canWrite || canDelete) && (
+                        <TableCell className="text-center">
+                          <div className="flex justify-center gap-2">
+                            {canWrite && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleOpenDialog(permission)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setDeletingPermissionId(permission.id)
+                                  setDeleteDialogOpen(true)
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="mt-4">
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              onPageChange={setCurrentPage}
+            />
+          </div>
         </CardContent>
       </Card>
 

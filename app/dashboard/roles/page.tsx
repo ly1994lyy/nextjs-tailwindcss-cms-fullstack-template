@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Pencil, Trash2, Search } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, Loader2 } from "lucide-react"
+import { PaginationControls } from "@/components/pagination-controls"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -49,6 +50,10 @@ export default function RolesPage() {
   const { hasPermission } = useAuth()
   const [roles, setRoles] = useState<Role[]>([])
   const [availablePermissions, setAvailablePermissions] = useState<Permission[]>([])
+  const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
   const [searchQuery, setSearchQuery] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -67,30 +72,38 @@ export default function RolesPage() {
 
   useEffect(() => {
     fetchRoles()
+  }, [currentPage, searchQuery])
+
+  useEffect(() => {
     fetchPermissions()
   }, [])
 
   const fetchRoles = async () => {
     try {
-      const res = await fetch("/api/roles")
+      setLoading(true)
+      const res = await fetch(`/api/roles?page=${currentPage}&pageSize=10&search=${searchQuery}`)
       if (res.ok) {
         const data = await res.json()
-        setRoles(data)
+        setRoles(data.data)
+        setTotalPages(data.totalPages)
+        setTotalCount(data.total)
       } else {
         toast.error("获取角色列表失败")
       }
     } catch (error) {
       console.error(error)
       toast.error("获取角色列表失败")
+    } finally {
+      setLoading(false)
     }
   }
 
   const fetchPermissions = async () => {
     try {
-      const res = await fetch("/api/permissions")
+      const res = await fetch("/api/permissions?pageSize=500")
       if (res.ok) {
         const data = await res.json()
-        setAvailablePermissions(data)
+        setAvailablePermissions(data.data || [])
       } else {
         toast.error("获取权限列表失败")
       }
@@ -98,13 +111,6 @@ export default function RolesPage() {
       console.error("Failed to fetch permissions", error)
     }
   }
-
-  const filteredRoles = roles.filter(
-    (role) =>
-      role.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      role.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      role.code.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
 
   const handleOpenDialog = (role?: Role) => {
     if (role) {
@@ -235,74 +241,102 @@ export default function RolesPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>角色名称</TableHead>
-                <TableHead>编码</TableHead>
-                <TableHead>描述</TableHead>
-                <TableHead>权限</TableHead>
-                <TableHead>用户数量</TableHead>
-                <TableHead>创建时间</TableHead>
-                {(canWrite || canDelete) && <TableHead className="text-right">操作</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredRoles.map((role) => (
-                <TableRow key={role.id}>
-                  <TableCell className="font-medium">{role.name}</TableCell>
-                  <TableCell>{role.code}</TableCell>
-                  <TableCell>{role.description}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {role.permissions.some((p) => p.code === "*") ? (
-                        <Badge>所有权限</Badge>
-                      ) : (
-                        role.permissions.slice(0, 3).map((perm) => (
-                          <Badge key={perm.id} variant="secondary">
-                            {perm.name}
-                          </Badge>
-                        ))
-                      )}
-                      {role.permissions.length > 3 &&
-                        !role.permissions.some((p) => p.code === "*") && (
-                          <Badge variant="outline">+{role.permissions.length - 3}</Badge>
-                        )}
-                    </div>
-                  </TableCell>
-                  <TableCell>{role.userCount}</TableCell>
-                  <TableCell>{new Date(role.createdAt).toLocaleDateString()}</TableCell>
-                  {(canWrite || canDelete) && (
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {canWrite && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenDialog(role)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {canDelete && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setDeletingRoleId(role.id)
-                              setDeleteDialogOpen(true)
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-center">角色名称</TableHead>
+                  <TableHead className="text-center">编码</TableHead>
+                  <TableHead className="text-center">描述</TableHead>
+                  <TableHead className="text-center">权限</TableHead>
+                  <TableHead className="text-center">用户数量</TableHead>
+                  <TableHead className="text-center">创建时间</TableHead>
+                  {(canWrite || canDelete) && <TableHead className="text-center">操作</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      <div className="flex justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin" />
                       </div>
                     </TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  </TableRow>
+                ) : roles.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      暂无数据
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  roles.map((role) => (
+                    <TableRow key={role.id}>
+                      <TableCell className="text-center font-medium">{role.name}</TableCell>
+                      <TableCell className="text-center">{role.code}</TableCell>
+                      <TableCell className="text-center">{role.description}</TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex flex-wrap justify-center gap-1">
+                          {role.permissions.some((p) => p.code === "*") ? (
+                            <Badge>所有权限</Badge>
+                          ) : (
+                            role.permissions.slice(0, 3).map((perm) => (
+                              <Badge key={perm.id} variant="secondary">
+                                {perm.name}
+                              </Badge>
+                            ))
+                          )}
+                          {role.permissions.length > 3 &&
+                            !role.permissions.some((p) => p.code === "*") && (
+                              <Badge variant="outline">+{role.permissions.length - 3}</Badge>
+                            )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">{role.userCount}</TableCell>
+                      <TableCell className="text-center">
+                        {new Date(role.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      {(canWrite || canDelete) && (
+                        <TableCell className="text-center">
+                          <div className="flex justify-center gap-2">
+                            {canWrite && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleOpenDialog(role)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setDeletingRoleId(role.id)
+                                  setDeleteDialogOpen(true)
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="mt-4">
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              onPageChange={setCurrentPage}
+            />
+          </div>
         </CardContent>
       </Card>
 

@@ -15,22 +15,31 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    const roles = await prisma.role.findMany({
-      where,
-      include: {
-        rolePermissions: {
-          include: {
-            permission: true,
+    const page = parseInt(searchParams.get("page") || "1")
+    const pageSize = parseInt(searchParams.get("pageSize") || "10")
+    const skip = (page - 1) * pageSize
+
+    const [roles, total] = await Promise.all([
+      prisma.role.findMany({
+        where,
+        include: {
+          rolePermissions: {
+            include: {
+              permission: true,
+            },
+          },
+          _count: {
+            select: { userRoles: true },
           },
         },
-        _count: {
-          select: { userRoles: true },
+        orderBy: {
+          sortOrder: "desc",
         },
-      },
-      orderBy: {
-        sortOrder: "desc",
-      },
-    })
+        skip,
+        take: pageSize,
+      }),
+      prisma.role.count({ where }),
+    ])
 
     const formattedRoles = roles.map((role) => ({
       ...role,
@@ -43,7 +52,13 @@ export async function GET(request: NextRequest) {
       })),
     }))
 
-    return NextResponse.json(formattedRoles)
+    return NextResponse.json({
+      data: formattedRoles,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    })
   } catch (error) {
     console.error("[v0] Get roles error:", error)
     return NextResponse.json({ error: "获取角色列表失败" }, { status: 500 })

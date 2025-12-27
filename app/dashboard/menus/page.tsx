@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Search, Pencil, Trash2, ChevronRight, Loader2 } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, ChevronRight, ChevronDown, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,6 +13,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import {
   Select,
   SelectContent,
@@ -228,72 +236,22 @@ export default function MenusPage() {
     })
   }
 
-  // Render Tree
-  const renderMenuTree = (items: Menu[], level = 0) => {
-    return items.map((menu) => (
-      <div key={menu.id}>
-        <div
-          className="hover:bg-accent group flex items-center gap-3 rounded-lg p-3"
-          style={{ paddingLeft: `${level * 1.5 + 0.75}rem` }}
-        >
-          {menu.children && menu.children.length > 0 ? (
-            <button
-              onClick={() => toggleExpand(menu.id)}
-              className="hover:bg-background rounded p-0.5"
-            >
-              <ChevronRight
-                className={`h-4 w-4 transition-transform ${expandedMenus.has(menu.id) ? "rotate-90" : ""}`}
-              />
-            </button>
-          ) : (
-            <div className="w-5" />
-          )}
-
-          <div className="flex flex-1 items-center gap-3">
-            <div className="font-medium">{menu.name}</div>
-            {menu.type === "directory" ? (
-              <Badge variant="secondary">目录</Badge>
-            ) : (
-              <Badge variant="outline">菜单</Badge>
-            )}
-            {menu.path && <div className="text-muted-foreground text-sm">{menu.path}</div>}
-            {menu.permissionCode && (
-              <Badge variant="outline" className="text-xs">
-                {menu.permissionCode}
-              </Badge>
-            )}
-            {menu.status === "inactive" && <Badge variant="destructive">停用</Badge>}
-          </div>
-
-          {(canWrite || canDelete) && (
-            <div className="flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-              {canWrite && (
-                <Button variant="ghost" size="icon" onClick={() => handleEdit(menu)}>
-                  <Pencil className="h-4 w-4" />
-                </Button>
-              )}
-              {canDelete && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    setDeletingMenuId(menu.id)
-                    setDeleteDialogOpen(true)
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {menu.children && menu.children.length > 0 && expandedMenus.has(menu.id) && (
-          <div>{renderMenuTree(menu.children, level + 1)}</div>
-        )}
-      </div>
-    ))
+  // Flatten tree for table rendering
+  const getFlattenedRows = (
+    nodes: Menu[],
+    level = 0,
+    result: { item: Menu; level: number }[] = [],
+  ) => {
+    nodes.forEach((node) => {
+      result.push({ item: node, level })
+      if (node.children && node.children.length > 0 && expandedMenus.has(node.id)) {
+        getFlattenedRows(node.children, level + 1, result)
+      }
+    })
+    return result
   }
+
+  const flattenedRows = getFlattenedRows(menuTree)
 
   // Get available parents (exclude self and children to prevent cycles)
   const getAvailableParents = () => {
@@ -387,11 +345,113 @@ export default function MenusPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex h-20 items-center justify-center">
-              <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+            <div className="flex justify-center p-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
             </div>
           ) : (
-            <div className="space-y-1">{renderMenuTree(menuTree)}</div>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[300px]">菜单名称</TableHead>
+                    <TableHead className="text-center">类型</TableHead>
+                    <TableHead className="text-center">路由路径</TableHead>
+                    <TableHead className="text-center">权限标识</TableHead>
+                    <TableHead className="text-center">排序</TableHead>
+                    <TableHead className="text-center">状态</TableHead>
+                    {(canWrite || canDelete) && <TableHead className="text-center">操作</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {flattenedRows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center">
+                        暂无数据
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    flattenedRows.map(({ item: menu, level }) => (
+                      <TableRow key={menu.id}>
+                        <TableCell>
+                          <div
+                            className="flex items-center gap-2"
+                            style={{ paddingLeft: `${level * 2}rem` }}
+                          >
+                            {menu.children && menu.children.length > 0 ? (
+                              <button
+                                onClick={() => toggleExpand(menu.id)}
+                                className="hover:bg-muted rounded p-1"
+                              >
+                                {expandedMenus.has(menu.id) ? (
+                                  <ChevronDown className="h-4 w-4" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4" />
+                                )}
+                              </button>
+                            ) : (
+                              <div className="w-6" /> // Placeholder for indent alignment
+                            )}
+                            <span className="font-medium">{menu.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {menu.type === "directory" ? (
+                            <Badge variant="secondary">目录</Badge>
+                          ) : (
+                            <Badge variant="outline">菜单</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-center text-sm">
+                          {menu.path || "-"}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {menu.permissionCode ? (
+                            <Badge variant="outline" className="font-mono text-xs">
+                              {menu.permissionCode}
+                            </Badge>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">{menu.sortOrder}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={menu.status === "active" ? "default" : "secondary"}>
+                            {menu.status === "active" ? "正常" : "停用"}
+                          </Badge>
+                        </TableCell>
+                        {(canWrite || canDelete) && (
+                          <TableCell className="text-center">
+                            <div className="flex justify-center gap-2">
+                              {canWrite && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEdit(menu)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {canDelete && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setDeletingMenuId(menu.id)
+                                    setDeleteDialogOpen(true)
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

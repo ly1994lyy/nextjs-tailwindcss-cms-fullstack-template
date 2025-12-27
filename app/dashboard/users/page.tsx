@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Pencil, Trash2, Search, Mail, Phone } from "lucide-react"
+import { Plus, Pencil, Trash2, Search, Mail, Phone, Loader2 } from "lucide-react"
+import { PaginationControls } from "@/components/pagination-controls"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -55,6 +56,10 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [roles, setRoles] = useState<Role[]>([])
+  const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
   const [searchQuery, setSearchQuery] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -77,31 +82,39 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers()
+  }, [currentPage, searchQuery])
+
+  useEffect(() => {
     fetchDepartments()
     fetchRoles()
   }, [])
 
   const fetchUsers = async () => {
     try {
-      const res = await fetch("/api/users")
+      setLoading(true)
+      const res = await fetch(`/api/users?page=${currentPage}&pageSize=10&search=${searchQuery}`)
       if (res.ok) {
         const data = await res.json()
-        setUsers(data)
+        setUsers(data.data)
+        setTotalPages(data.totalPages)
+        setTotalCount(data.total)
       } else {
         toast.error("获取用户列表失败")
       }
     } catch (error) {
       console.error(error)
       toast.error("获取用户列表失败")
+    } finally {
+      setLoading(false)
     }
   }
 
   const fetchDepartments = async () => {
     try {
-      const res = await fetch("/api/departments")
+      const res = await fetch("/api/departments?pageSize=100")
       if (res.ok) {
         const data = await res.json()
-        setDepartments(data)
+        setDepartments(data.data || [])
       }
     } catch (error) {
       console.error("Failed to fetch departments", error)
@@ -110,10 +123,10 @@ export default function UsersPage() {
 
   const fetchRoles = async () => {
     try {
-      const res = await fetch("/api/roles")
+      const res = await fetch("/api/roles?pageSize=100")
       if (res.ok) {
         const data = await res.json()
-        setRoles(data)
+        setRoles(data.data || [])
       }
     } catch (error) {
       console.error("Failed to fetch roles", error)
@@ -255,81 +268,110 @@ export default function UsersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>用户名</TableHead>
-                <TableHead>姓名</TableHead>
-                <TableHead>联系方式</TableHead>
-                <TableHead>部门</TableHead>
-                <TableHead>角色</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead>创建时间</TableHead>
-                {(canWrite || canDelete) && <TableHead className="text-right">操作</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.username}</TableCell>
-                  <TableCell>{user.realName}</TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {user.email && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Mail className="text-muted-foreground h-3 w-3" />
-                          {user.email}
-                        </div>
-                      )}
-                      {user.phone && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Phone className="text-muted-foreground h-3 w-3" />
-                          {user.phone}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>{user.departmentName || "-"}</TableCell>
-                  <TableCell>
-                    {(user.roles && user.roles.map((r) => r.name).join(", ")) || "-"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={user.status === "active" ? "default" : "secondary"}>
-                      {user.status === "active" ? "正常" : "停用"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                  {(canWrite || canDelete) && (
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {canWrite && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenDialog(user)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        )}
-                        {canDelete && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setDeletingUserId(user.id)
-                              setDeleteDialogOpen(true)
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-center">用户名</TableHead>
+                  <TableHead className="text-center">姓名</TableHead>
+                  <TableHead className="text-center">联系方式</TableHead>
+                  <TableHead className="text-center">部门</TableHead>
+                  <TableHead className="text-center">角色</TableHead>
+                  <TableHead className="text-center">状态</TableHead>
+                  <TableHead className="text-center">创建时间</TableHead>
+                  {(canWrite || canDelete) && <TableHead className="text-center">操作</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-24 text-center">
+                      <div className="flex justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin" />
                       </div>
                     </TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  </TableRow>
+                ) : users.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="h-24 text-center">
+                      暂无数据
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="text-center font-medium">{user.username}</TableCell>
+                      <TableCell className="text-center">{user.realName}</TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex flex-col items-center justify-center space-y-1">
+                          {user.email && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Mail className="text-muted-foreground h-3 w-3" />
+                              {user.email}
+                            </div>
+                          )}
+                          {user.phone && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Phone className="text-muted-foreground h-3 w-3" />
+                              {user.phone}
+                            </div>
+                          )}
+                          {!user.email && !user.phone && <span>-</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">{user.departmentName || "-"}</TableCell>
+                      <TableCell className="text-center">
+                        {(user.roles && user.roles.map((r) => r.name).join(", ")) || "-"}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={user.status === "active" ? "default" : "secondary"}>
+                          {user.status === "active" ? "正常" : "停用"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      {(canWrite || canDelete) && (
+                        <TableCell className="text-center">
+                          <div className="flex justify-center gap-2">
+                            {canWrite && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleOpenDialog(user)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {canDelete && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setDeletingUserId(user.id)
+                                  setDeleteDialogOpen(true)
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="mt-4">
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              onPageChange={setCurrentPage}
+            />
+          </div>
         </CardContent>
       </Card>
 

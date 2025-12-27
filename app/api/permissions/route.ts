@@ -20,19 +20,28 @@ export async function GET(request: NextRequest) {
       where.type = type
     }
 
-    const permissions = await prisma.permission.findMany({
-      where,
-      include: {
-        rolePermissions: {
-          include: {
-            role: true,
+    const page = parseInt(searchParams.get("page") || "1")
+    const pageSize = parseInt(searchParams.get("pageSize") || "10")
+    const skip = (page - 1) * pageSize
+
+    const [permissions, total] = await Promise.all([
+      prisma.permission.findMany({
+        where,
+        include: {
+          rolePermissions: {
+            include: {
+              role: true,
+            },
           },
         },
-      },
-      orderBy: {
-        sortOrder: "asc",
-      },
-    })
+        orderBy: {
+          sortOrder: "asc",
+        },
+        skip,
+        take: pageSize,
+      }),
+      prisma.permission.count({ where }),
+    ])
 
     const formattedPermissions = permissions.map((p) => ({
       ...p,
@@ -40,7 +49,13 @@ export async function GET(request: NextRequest) {
       roles: p.rolePermissions.map((rp) => rp.role),
     }))
 
-    return NextResponse.json(formattedPermissions)
+    return NextResponse.json({
+      data: formattedPermissions,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    })
   } catch (error) {
     console.error("[v0] Get permissions error:", error)
     return NextResponse.json({ error: "获取权限列表失败" }, { status: 500 })

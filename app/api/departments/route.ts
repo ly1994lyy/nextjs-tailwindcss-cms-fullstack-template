@@ -15,22 +15,31 @@ export async function GET(request: NextRequest) {
         }
       : {}
 
-    const departments = await prisma.department.findMany({
-      where,
-      include: {
-        parent: {
-          select: {
-            name: true,
+    const page = parseInt(searchParams.get("page") || "1")
+    const pageSize = parseInt(searchParams.get("pageSize") || "10")
+    const skip = (page - 1) * pageSize
+
+    const [departments, total] = await Promise.all([
+      prisma.department.findMany({
+        where,
+        include: {
+          parent: {
+            select: {
+              name: true,
+            },
+          },
+          _count: {
+            select: {
+              users: true,
+            },
           },
         },
-        _count: {
-          select: {
-            users: true,
-          },
-        },
-      },
-      orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
-    })
+        orderBy: [{ sortOrder: "asc" }, { id: "asc" }],
+        skip,
+        take: pageSize,
+      }),
+      prisma.department.count({ where }),
+    ])
 
     const formattedDepartments = departments.map((dept) => ({
       ...dept,
@@ -38,7 +47,13 @@ export async function GET(request: NextRequest) {
       userCount: dept._count.users,
     }))
 
-    return NextResponse.json(formattedDepartments)
+    return NextResponse.json({
+      data: formattedDepartments,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    })
   } catch (error) {
     console.error("[Get Departments] Error:", error)
     return NextResponse.json({ error: "获取部门列表失败" }, { status: 500 })

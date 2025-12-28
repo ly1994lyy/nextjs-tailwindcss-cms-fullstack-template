@@ -65,13 +65,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, code, parentId, manager, phone, email, sortOrder, status, description } = body
 
-    if (!name || !code) {
-      return NextResponse.json({ error: "部门名称和编码不能为空" }, { status: 400 })
+    if (!name) {
+      return NextResponse.json({ error: "部门名称不能为空" }, { status: 400 })
+    }
+
+    let finalCode = code
+    if (!finalCode) {
+      finalCode = `DEPT_${Date.now()}_${Math.floor(Math.random() * 1000)}`
     }
 
     const payload: any = {
       name,
-      code,
+      code: finalCode,
       manager,
       phone,
       email,
@@ -103,19 +108,22 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const { id, name, code, parentId, manager, phone, email, sortOrder, status, description } = body
 
-    if (!id || !name || !code) {
-      return NextResponse.json({ error: "ID、部门名称和编码不能为空" }, { status: 400 })
+    if (!id || !name) {
+      return NextResponse.json({ error: "ID、部门名称不能为空" }, { status: 400 })
     }
 
     const payload: any = {
       name,
-      code,
       manager,
       phone,
       email,
       sortOrder: sortOrder || 0,
       status: status || "active",
       description,
+    }
+
+    if (code) {
+      payload.code = code
     }
 
     if (parentId && parentId !== "") {

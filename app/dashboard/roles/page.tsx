@@ -64,7 +64,6 @@ export default function RolesPage() {
   const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
-    code: "",
     description: "",
     menuIds: [] as number[],
     status: "active",
@@ -120,14 +119,13 @@ export default function RolesPage() {
       setEditingRole(role)
       setFormData({
         name: role.name,
-        code: role.code,
         description: role.description || "",
         status: role.status,
         menuIds: role.menuIds || [],
       })
     } else {
       setEditingRole(null)
-      setFormData({ name: "", code: "", description: "", status: "active", menuIds: [] })
+      setFormData({ name: "", description: "", status: "active", menuIds: [] })
     }
     setDialogOpen(true)
   }
@@ -225,7 +223,6 @@ export default function RolesPage() {
       const method = editingRole ? "PUT" : "POST"
       const body: any = {
         name: formData.name,
-        code: formData.code,
         description: formData.description,
         status: formData.status,
         menuIds: formData.menuIds,
@@ -337,7 +334,7 @@ export default function RolesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-center">角色名称</TableHead>
-                  <TableHead className="text-center">编码</TableHead>
+                  <TableHead className="w-[80px] text-center">ID</TableHead>
                   <TableHead className="text-center">描述</TableHead>
                   <TableHead className="text-center">权限菜单</TableHead>
                   <TableHead className="text-center">用户数量</TableHead>
@@ -364,7 +361,7 @@ export default function RolesPage() {
                   roles.map((role) => (
                     <TableRow key={role.id}>
                       <TableCell className="text-center font-medium">{role.name}</TableCell>
-                      <TableCell className="text-center">{role.code}</TableCell>
+                      <TableCell className="text-center">{role.id}</TableCell>
                       <TableCell className="text-center">{role.description}</TableCell>
                       <TableCell className="text-center">
                         <Badge variant="secondary">{role.menuIds?.length || 0} 个菜单/权限</Badge>
@@ -440,16 +437,6 @@ export default function RolesPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="请输入角色名称"
-                  disabled={submitting}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="code">角色编码</Label>
-                <Input
-                  id="code"
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  placeholder="请输入角色编码"
                   disabled={submitting}
                 />
               </div>

@@ -57,7 +57,6 @@ export default function DepartmentsPage() {
   const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
-    code: "",
     description: "",
     parentId: "",
     manager: "",
@@ -96,7 +95,6 @@ export default function DepartmentsPage() {
       setEditingDepartment(department)
       setFormData({
         name: department.name,
-        code: department.code,
         description: department.description || "",
         parentId: department.parentId?.toString() || "",
         manager: department.manager || "",
@@ -107,7 +105,6 @@ export default function DepartmentsPage() {
       setEditingDepartment(null)
       setFormData({
         name: "",
-        code: "",
         description: "",
         parentId: "",
         manager: "",
@@ -122,14 +119,14 @@ export default function DepartmentsPage() {
     if (submitting) return
     setSubmitting(true)
     try {
-      if (!formData.name || !formData.code) {
-        toast.error("部门名称和编码不能为空")
+      if (!formData.name) {
+        toast.error("部门名称不能为空")
         setSubmitting(false)
         return
       }
 
       const method = editingDepartment ? "PUT" : "POST"
-      const body = {
+      const body: any = {
         ...formData,
         id: editingDepartment?.id,
       }
@@ -231,7 +228,7 @@ export default function DepartmentsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-center">部门名称</TableHead>
-                  <TableHead className="text-center">编码</TableHead>
+                  <TableHead className="w-[80px] text-center">ID</TableHead>
                   <TableHead className="text-center">上级部门</TableHead>
                   <TableHead className="text-center">负责人</TableHead>
                   <TableHead className="text-center">成员数量</TableHead>
@@ -263,7 +260,7 @@ export default function DepartmentsPage() {
                           {department.description}
                         </div>
                       </TableCell>
-                      <TableCell className="text-center">{department.code}</TableCell>
+                      <TableCell className="text-center">{department.id}</TableCell>
                       <TableCell className="text-center">{department.parentName || "-"}</TableCell>
                       <TableCell className="text-center">{department.manager || "-"}</TableCell>
                       <TableCell className="text-center">{department.userCount}</TableCell>
@@ -337,16 +334,6 @@ export default function DepartmentsPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="请输入部门名称"
-                  disabled={submitting}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="code">部门编码</Label>
-                <Input
-                  id="code"
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  placeholder="请输入部门编码"
                   disabled={submitting}
                 />
               </div>

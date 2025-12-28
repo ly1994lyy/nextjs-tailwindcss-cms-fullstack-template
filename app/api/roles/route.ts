@@ -65,13 +65,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, code, sortOrder, status, description, menuIds } = body
 
-    if (!name || !code) {
-      return NextResponse.json({ error: "角色名称和编码不能为空" }, { status: 400 })
+    if (!name) {
+      return NextResponse.json({ error: "角色名称不能为空" }, { status: 400 })
     }
 
-    // Check if code exists
+    let finalCode = code
+    if (!finalCode) {
+      finalCode = `ROLE_${Date.now()}_${Math.floor(Math.random() * 1000)}`
+    }
+
+    // Check if code exists (only if custom code provided, or safe check for generated)
     const existingRole = await prisma.role.findUnique({
-      where: { code },
+      where: { code: finalCode },
     })
 
     if (existingRole) {
@@ -81,7 +86,7 @@ export async function POST(request: NextRequest) {
     const role = await prisma.role.create({
       data: {
         name,
-        code,
+        code: finalCode,
         sortOrder: sortOrder || 0,
         status: status || "active",
         description,
@@ -119,20 +124,25 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const { id, name, code, sortOrder, status, description, menuIds } = body
 
-    if (!id || !name || !code) {
-      return NextResponse.json({ error: "ID、角色名称和编码不能为空" }, { status: 400 })
+    if (!id || !name) {
+      return NextResponse.json({ error: "ID和角色名称不能为空" }, { status: 400 })
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      // Prepare update data
+      const updateData: any = {
+        name,
+        sortOrder: sortOrder || 0,
+        status,
+        description,
+      }
+      if (code) {
+        updateData.code = code
+      }
+
       const role = await tx.role.update({
         where: { id: parseInt(id) },
-        data: {
-          name,
-          code,
-          sortOrder: sortOrder || 0,
-          status,
-          description,
-        },
+        data: updateData,
       })
 
       if (menuIds !== undefined) {

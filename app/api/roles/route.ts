@@ -151,8 +151,11 @@ export async function PUT(request: NextRequest) {
         })
 
         if (menuIds.length > 0) {
+          // Ensure unique and numbers
+          const uniqueMenuIds = [...new Set(menuIds)].map((id) => Number(id))
+
           await tx.roleMenu.createMany({
-            data: menuIds.map((mid: number) => ({
+            data: uniqueMenuIds.map((mid) => ({
               roleId: role.id,
               menuId: mid,
             })),
@@ -185,7 +188,8 @@ export async function PUT(request: NextRequest) {
     if (error.code === "P2002") {
       return NextResponse.json({ error: "角色编码已存在" }, { status: 400 })
     }
-    return NextResponse.json({ error: "更新角色失败" }, { status: 500 })
+    // Return actual error for debugging
+    return NextResponse.json({ error: error.message || "更新角色失败" }, { status: 500 })
   }
 }
 

@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, code, type, sortOrder, status, description } = body
+    const { name, code, type, sortOrder, status, description, menuId } = body
 
     if (!name || !code || !type) {
       return NextResponse.json({ error: "权限名称、编码和类型不能为空" }, { status: 400 })
@@ -91,6 +91,21 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Handle Menu Association
+    if (menuId) {
+      // Clear any existing menu using this code (safety)
+      await prisma.menu.updateMany({
+        where: { permissionCode: code },
+        data: { permissionCode: null },
+      })
+
+      // Assign to new menu
+      await prisma.menu.update({
+        where: { id: parseInt(menuId) },
+        data: { permissionCode: code },
+      })
+    }
+
     return NextResponse.json(permission, { status: 201 })
   } catch (error) {
     console.error("[v0] Create permission error:", error)
@@ -101,10 +116,19 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, name, code, type, sortOrder, status, description } = body
+    const { id, name, code, type, sortOrder, status, description, menuId } = body
 
     if (!id || !name || !code || !type) {
       return NextResponse.json({ error: "ID、权限名称、编码和类型不能为空" }, { status: 400 })
+    }
+
+    // Get old permission to check for code change
+    const oldPermission = await prisma.permission.findUnique({
+      where: { id: parseInt(id) },
+    })
+
+    if (!oldPermission) {
+      return NextResponse.json({ error: "权限不存在" }, { status: 404 })
     }
 
     const permission = await prisma.permission.update({
@@ -118,6 +142,38 @@ export async function PUT(request: NextRequest) {
         description,
       },
     })
+
+    // Handle Menu Association
+
+    // 1. If code changed, clear old references
+    if (oldPermission.code !== code) {
+      await prisma.menu.updateMany({
+        where: { permissionCode: oldPermission.code },
+        data: { permissionCode: null },
+      })
+    }
+
+    // 2. If menuId provided, set new association
+    if (menuId) {
+      // Ensure specific target menu has the code
+      // First clear any other menus using this new code
+      await prisma.menu.updateMany({
+        where: { permissionCode: code },
+        data: { permissionCode: null },
+      })
+
+      // Then set
+      await prisma.menu.update({
+        where: { id: parseInt(menuId) },
+        data: { permissionCode: code },
+      })
+    } else {
+      // If menuId is empty/null, it means we want to clear any association with this permission
+      await prisma.menu.updateMany({
+        where: { permissionCode: code },
+        data: { permissionCode: null },
+      })
+    }
 
     return NextResponse.json(permission)
   } catch (error: any) {

@@ -25,6 +25,7 @@ model User {
   @@map("users")
 }
 
+
 model Role {
   id          Int      @id @default(autoincrement())
   name        String
@@ -37,6 +38,7 @@ model Role {
 
   userRoles       UserRole[]
   rolePermissions RolePermission[]
+  roleMenus       RoleMenu[]
 
   @@map("roles")
 }
@@ -91,8 +93,9 @@ model Menu {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  parent   Menu?  @relation("MenuToMenu", fields: [parentId], references: [id])
-  children Menu[] @relation("MenuToMenu")
+  parent    Menu?      @relation("MenuToMenu", fields: [parentId], references: [id])
+  children  Menu[]     @relation("MenuToMenu")
+  roleMenus RoleMenu[]
 
   @@map("menus")
 }
@@ -118,3 +121,15 @@ model RolePermission {
   @@id([roleId, permissionId])
   @@map("role_permissions")
 }
+
+model RoleMenu {
+  roleId Int @map("role_id")
+  menuId Int @map("menu_id")
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  menu Menu @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, menuId])
+  @@map("role_menus")
+}
+

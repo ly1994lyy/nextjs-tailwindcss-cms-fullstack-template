@@ -256,10 +256,12 @@ export default function MenusPage() {
   // Get available parents (exclude self and children to prevent cycles)
   const getAvailableParents = () => {
     // Basic cycle prevention: cannot set parent to self.
-    // Full cycle detection is complex but for now just filter self.
-    // Also filter out any node that is currently a descendant of editingMenu (if we want to be strict).
-    // For simplicity, just filter self.
-    if (!editingMenu) return menus.filter((m) => m.type === "directory" || m.type === "menu") // Allow converting menu to submenu of another? Usually directories are parents
+    // Also buttons cannot be parents.
+
+    // Filter out buttons from potential parents
+    let candidates = menus.filter((m) => m.type !== "button")
+
+    if (!editingMenu) return candidates
 
     // Recursively find descendants to exclude
     const getDescendants = (parentId: number): number[] => {
@@ -274,9 +276,7 @@ export default function MenusPage() {
     const descendants = getDescendants(editingMenu.id)
     const excludeIds = new Set([editingMenu.id, ...descendants])
 
-    return menus.filter(
-      (m) => !excludeIds.has(m.id) && (m.type === "directory" || m.type === "menu"),
-    )
+    return candidates.filter((m) => !excludeIds.has(m.id))
   }
 
   return (
@@ -312,9 +312,9 @@ export default function MenusPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>停用菜单</CardDescription>
+            <CardDescription>按钮权限</CardDescription>
             <CardTitle className="text-3xl">
-              {menus.filter((m) => m.status === "inactive").length}
+              {menus.filter((m) => m.type === "button").length}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -397,6 +397,13 @@ export default function MenusPage() {
                         <TableCell className="text-center">
                           {menu.type === "directory" ? (
                             <Badge variant="secondary">目录</Badge>
+                          ) : menu.type === "button" ? (
+                            <Badge
+                              variant="outline"
+                              className="border-blue-200 bg-blue-50 text-blue-700"
+                            >
+                              按钮
+                            </Badge>
                           ) : (
                             <Badge variant="outline">菜单</Badge>
                           )}
@@ -476,18 +483,19 @@ export default function MenusPage() {
                 <SelectContent>
                   <SelectItem value="directory">目录</SelectItem>
                   <SelectItem value="menu">菜单</SelectItem>
+                  <SelectItem value="button">按钮</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>菜单名称</Label>
+              <Label>名称</Label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="输入菜单名称"
+                placeholder={formData.type === "button" ? "例如：新增用户" : "输入菜单名称"}
               />
             </div>
-            {formData.type === "menu" && (
+            {formData.type !== "button" && (
               <div className="space-y-2">
                 <Label>菜单路径</Label>
                 <Input
@@ -497,14 +505,16 @@ export default function MenusPage() {
                 />
               </div>
             )}
-            <div className="space-y-2">
-              <Label>图标</Label>
-              <Input
-                value={formData.icon}
-                onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                placeholder="lucide-react 图标名称"
-              />
-            </div>
+            {formData.type !== "button" && (
+              <div className="space-y-2">
+                <Label>图标</Label>
+                <Input
+                  value={formData.icon}
+                  onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                  placeholder="lucide-react 图标名称"
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label>父菜单</Label>
               <Select
@@ -524,13 +534,13 @@ export default function MenusPage() {
                 </SelectContent>
               </Select>
             </div>
-            {formData.type === "menu" && (
+            {(formData.type === "menu" || formData.type === "button") && (
               <div className="space-y-2">
                 <Label>权限标识</Label>
                 <Input
                   value={formData.permissionCode}
                   onChange={(e) => setFormData({ ...formData, permissionCode: e.target.value })}
-                  placeholder="例如: menu:read"
+                  placeholder="例如: menu:read 或 user:add"
                 />
               </div>
             )}
@@ -555,6 +565,7 @@ export default function MenusPage() {
               </select>
             </div>
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               取消
@@ -565,6 +576,7 @@ export default function MenusPage() {
       </Dialog>
 
       {/* Delete Dialog */}
+
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>

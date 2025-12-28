@@ -43,6 +43,7 @@ const defaultCategories = ["部门管理", "用户管理", "角色管理", "权�
 export default function PermissionsPage() {
   const { hasPermission } = useAuth()
   const [permissions, setPermissions] = useState<Permission[]>([])
+  const [menus, setMenus] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
@@ -59,6 +60,7 @@ export default function PermissionsPage() {
     type: "",
     description: "",
     status: "active",
+    menuId: "",
   })
 
   // Perms check
@@ -67,7 +69,20 @@ export default function PermissionsPage() {
 
   useEffect(() => {
     fetchPermissions()
+    fetchMenus()
   }, [currentPage, searchQuery, selectedCategory])
+
+  const fetchMenus = async () => {
+    try {
+      const res = await fetch("/api/menus")
+      if (res.ok) {
+        const data = await res.json()
+        setMenus(data)
+      }
+    } catch (error) {
+      console.error("Failed to fetch menus", error)
+    }
+  }
 
   const fetchPermissions = async () => {
     try {
@@ -107,16 +122,26 @@ export default function PermissionsPage() {
   const handleOpenDialog = (permission?: Permission) => {
     if (permission) {
       setEditingPermission(permission)
+      // Find associated menu
+      const linkedMenu = menus.find((m) => m.permissionCode === permission.code)
       setFormData({
         code: permission.code,
         name: permission.name,
         type: permission.type,
         description: permission.description || "",
         status: permission.status,
+        menuId: linkedMenu ? linkedMenu.id.toString() : "",
       })
     } else {
       setEditingPermission(null)
-      setFormData({ code: "", name: "", type: "", description: "", status: "active" })
+      setFormData({
+        code: "",
+        name: "",
+        type: "",
+        description: "",
+        status: "active",
+        menuId: "",
+      })
     }
     setDialogOpen(true)
   }
@@ -131,6 +156,7 @@ export default function PermissionsPage() {
         type: formData.type,
         description: formData.description,
         status: formData.status,
+        menuId: formData.menuId || null,
       }
 
       if (editingPermission) {
@@ -147,6 +173,7 @@ export default function PermissionsPage() {
         toast.success(editingPermission ? "权限更新成功" : "权限创建成功")
         setDialogOpen(false)
         fetchPermissions()
+        fetchMenus() // Refresh menus as linkage might have changed
       } else {
         const errorData = await res.json()
         toast.error(errorData.error || "操作失败")
@@ -170,6 +197,7 @@ export default function PermissionsPage() {
         setDeleteDialogOpen(false)
         setDeletingPermissionId(null)
         fetchPermissions()
+        fetchMenus() // Refresh in case menu links were cleared
       } else {
         const errorData = await res.json()
         toast.error(errorData.error || "删除失败")
@@ -258,6 +286,7 @@ export default function PermissionsPage() {
                   <TableHead className="text-center">权限名称</TableHead>
                   <TableHead className="text-center">分类</TableHead>
                   <TableHead className="text-center">描述</TableHead>
+                  <TableHead className="text-center">关联菜单</TableHead>
                   <TableHead className="text-center">关联角色</TableHead>
                   <TableHead className="text-center">创建时间</TableHead>
                   {(canWrite || canDelete) && <TableHead className="text-center">操作</TableHead>}
@@ -266,7 +295,7 @@ export default function PermissionsPage() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
+                    <TableCell colSpan={8} className="h-24 text-center">
                       <div className="flex justify-center">
                         <Loader2 className="h-6 w-6 animate-spin" />
                       </div>
@@ -274,56 +303,68 @@ export default function PermissionsPage() {
                   </TableRow>
                 ) : permissions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
+                    <TableCell colSpan={8} className="h-24 text-center">
                       暂无数据
                     </TableCell>
                   </TableRow>
                 ) : (
-                  permissions.map((permission) => (
-                    <TableRow key={permission.id}>
-                      <TableCell className="text-center font-mono text-sm">
-                        {permission.code}
-                      </TableCell>
-                      <TableCell className="text-center font-medium">{permission.name}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline">{permission.type}</Badge>
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate text-center">
-                        {permission.description}
-                      </TableCell>
-                      <TableCell className="text-center">{permission.roleCount} 个角色</TableCell>
-                      <TableCell className="text-center">
-                        {new Date(permission.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      {(canWrite || canDelete) && (
-                        <TableCell className="text-center">
-                          <div className="flex justify-center gap-2">
-                            {canWrite && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleOpenDialog(permission)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {canDelete && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setDeletingPermissionId(permission.id)
-                                  setDeleteDialogOpen(true)
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
+                  permissions.map((permission) => {
+                    const linkedMenu = menus.find((m) => m.permissionCode === permission.code)
+                    return (
+                      <TableRow key={permission.id}>
+                        <TableCell className="text-center font-mono text-sm">
+                          {permission.code}
                         </TableCell>
-                      )}
-                    </TableRow>
-                  ))
+                        <TableCell className="text-center font-medium">{permission.name}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline">{permission.type}</Badge>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate text-center">
+                          {permission.description}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {linkedMenu ? (
+                            <Badge variant="secondary" className="font-normal">
+                              {linkedMenu.name}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">{permission.roleCount} 个角色</TableCell>
+                        <TableCell className="text-center">
+                          {new Date(permission.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        {(canWrite || canDelete) && (
+                          <TableCell className="text-center">
+                            <div className="flex justify-center gap-2">
+                              {canWrite && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleOpenDialog(permission)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {canDelete && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setDeletingPermissionId(permission.id)
+                                    setDeleteDialogOpen(true)
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    )
+                  })
                 )}
               </TableBody>
             </Table>
@@ -384,6 +425,23 @@ export default function PermissionsPage() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="menuId">关联菜单</Label>
+              <select
+                id="menuId"
+                value={formData.menuId}
+                onChange={(e) => setFormData({ ...formData, menuId: e.target.value })}
+                className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+              >
+                <option value="">不关联菜单</option>
+                {menus.map((menu) => (
+                  <option key={menu.id} value={menu.id}>
+                    {menu.name} {menu.parentId ? "(子菜单)" : ""}
+                  </option>
+                ))}
+              </select>
+              <p className="text-muted-foreground text-xs">选择后，该菜单将自动绑定此权限代码</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">描述</Label>

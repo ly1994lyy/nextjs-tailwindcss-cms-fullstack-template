@@ -66,20 +66,16 @@ const menuItems = [
         href: "/dashboard/users",
         permission: "user:read",
       },
+
       {
         title: "menu.roles",
         icon: Shield,
         href: "/dashboard/roles",
         permission: "role:read",
       },
-      {
-        title: "menu.permissions",
-        icon: Lock,
-        href: "/dashboard/permissions",
-        permission: "permission:read",
-      },
     ],
   },
+
   {
     title: "menu.development",
     icon: Code,
@@ -272,12 +268,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   >
                     <div className="flex min-w-0 flex-1 items-center gap-3">
                       <div className="bg-primary text-primary-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-semibold">
-                        {user?.name.charAt(0)}
+                        {user?.realName?.charAt(0)}
                       </div>
                       {!collapsed && (
                         <div className="min-w-0 flex-1 text-left">
-                          <div className="truncate text-sm font-medium">{user?.name}</div>
-                          <div className="text-muted-foreground truncate text-xs">{user?.role}</div>
+                          <div className="truncate text-sm font-medium">{user?.realName}</div>
+                          <div className="text-muted-foreground truncate text-xs">
+                            {user?.roles?.join(", ")}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -359,8 +357,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 ))}
               </nav>
             </div>
+
             <div className="text-muted-foreground text-sm">
-              {t("common.welcome")}, {user?.name}
+              {t("common.welcome")}, {user?.realName}
             </div>
           </header>
 

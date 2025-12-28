@@ -6,8 +6,12 @@ import { useRouter } from "next/navigation"
 interface User {
   id: string
   username: string
-  name: string
-  role: string
+  realName: string
+  email: string | null
+  phone: string | null
+  departmentId: number | null
+  departmentName?: string
+  roles: string[]
   permissions: string[]
 }
 
@@ -20,50 +24,56 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Mock user data - 在实际应用中应该从数据库获取
-const mockUsers = [
-  {
-    id: "1",
-    username: "admin",
-    password: "admin123",
-    name: "系统管理员",
-    role: "admin",
-    permissions: ["*"], // 所有权限
-  },
-  {
-    id: "2",
-    username: "manager",
-    password: "manager123",
-    name: "部门经理",
-    role: "manager",
-    permissions: ["department:read", "department:write", "user:read", "menu:read"],
-  },
-]
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const router = useRouter()
 
   useEffect(() => {
-    // 从 localStorage 恢复用户会话
+    // Restore user session from localStorage
     const savedUser = localStorage.getItem("user")
     if (savedUser) {
-      setUser(JSON.parse(savedUser))
+      try {
+        const parsedUser = JSON.parse(savedUser)
+        // Validate user structure (ensure roles is an array to avoid crashes on old data)
+        if (parsedUser && Array.isArray(parsedUser.roles)) {
+          setUser(parsedUser)
+        } else {
+          localStorage.removeItem("user")
+        }
+      } catch (e) {
+        console.error("Failed to parse user from local storage", e)
+        localStorage.removeItem("user")
+      }
     }
   }, [])
 
-  const login = async (username: string, password: string): Promise<boolean> => {
-    // 在实际应用中应该调用后端 API
-    const mockUser = mockUsers.find((u) => u.username === username && u.password === password)
+  const login = async (username: string, password: string) => {
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      })
 
-    if (mockUser) {
-      const { password: _, ...userWithoutPassword } = mockUser
-      setUser(userWithoutPassword)
-      localStorage.setItem("user", JSON.stringify(userWithoutPassword))
-      return true
+      if (res.ok) {
+        const data = await res.json()
+
+        const userObj: User = {
+          ...data.user,
+          roles: data.roles.map((r: any) => r.code),
+          permissions: data.permissions,
+        }
+
+        setUser(userObj)
+        localStorage.setItem("user", JSON.stringify(userObj))
+        return true
+      }
+
+      return false
+    } catch (error) {
+      console.error("Login failed", error)
+      return false
     }
-
-    return false
   }
 
   const logout = () => {
@@ -72,9 +82,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push("/login")
   }
 
-  const hasPermission = (permission: string): boolean => {
+  const hasPermission = (permission: string) => {
     if (!user) return false
-    if (user.permissions.includes("*")) return true
+    // Admin has all permissions
+    if (user.roles.includes("admin") || user.permissions.includes("*")) return true
+
+    // Check specific permission
     return user.permissions.includes(permission)
   }
 

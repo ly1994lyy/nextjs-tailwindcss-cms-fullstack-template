@@ -23,9 +23,9 @@ export async function GET(request: NextRequest) {
       prisma.role.findMany({
         where,
         include: {
-          rolePermissions: {
-            include: {
-              permission: true,
+          roleMenus: {
+            select: {
+              menuId: true,
             },
           },
           _count: {
@@ -44,12 +44,7 @@ export async function GET(request: NextRequest) {
     const formattedRoles = roles.map((role) => ({
       ...role,
       userCount: role._count.userRoles,
-      permissions: role.rolePermissions.map((rp) => ({
-        id: rp.permission.id,
-        name: rp.permission.name,
-        code: rp.permission.code,
-        type: rp.permission.type,
-      })),
+      menuIds: role.roleMenus.map((rm) => rm.menuId),
     }))
 
     return NextResponse.json({
@@ -68,7 +63,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, code, sortOrder, status, description, permissionIds } = body
+    const { name, code, sortOrder, status, description, menuIds } = body
 
     if (!name || !code) {
       return NextResponse.json({ error: "角色名称和编码不能为空" }, { status: 400 })
@@ -90,17 +85,15 @@ export async function POST(request: NextRequest) {
         sortOrder: sortOrder || 0,
         status: status || "active",
         description,
-        rolePermissions: {
-          create: permissionIds?.map((permissionId: number) => ({
-            permission: { connect: { id: permissionId } },
+        roleMenus: {
+          create: menuIds?.map((menuId: number) => ({
+            menu: { connect: { id: menuId } },
           })),
         },
       },
       include: {
-        rolePermissions: {
-          include: {
-            permission: true,
-          },
+        roleMenus: {
+          select: { menuId: true },
         },
         _count: {
           select: { userRoles: true },
@@ -111,12 +104,7 @@ export async function POST(request: NextRequest) {
     const formattedRole = {
       ...role,
       userCount: role._count.userRoles,
-      permissions: role.rolePermissions.map((rp) => ({
-        id: rp.permission.id,
-        name: rp.permission.name,
-        code: rp.permission.code,
-        type: rp.permission.type,
-      })),
+      menuIds: role.roleMenus.map((rm) => rm.menuId),
     }
 
     return NextResponse.json(formattedRole, { status: 201 })
@@ -129,7 +117,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, name, code, sortOrder, status, description, permissionIds } = body
+    const { id, name, code, sortOrder, status, description, menuIds } = body
 
     if (!id || !name || !code) {
       return NextResponse.json({ error: "ID、角色名称和编码不能为空" }, { status: 400 })
@@ -147,16 +135,16 @@ export async function PUT(request: NextRequest) {
         },
       })
 
-      if (permissionIds !== undefined) {
-        await tx.rolePermission.deleteMany({
+      if (menuIds !== undefined) {
+        await tx.roleMenu.deleteMany({
           where: { roleId: role.id },
         })
 
-        if (permissionIds.length > 0) {
-          await tx.rolePermission.createMany({
-            data: permissionIds.map((pid: number) => ({
+        if (menuIds.length > 0) {
+          await tx.roleMenu.createMany({
+            data: menuIds.map((mid: number) => ({
               roleId: role.id,
-              permissionId: pid,
+              menuId: mid,
             })),
           })
         }
@@ -165,10 +153,8 @@ export async function PUT(request: NextRequest) {
       return tx.role.findUnique({
         where: { id: role.id },
         include: {
-          rolePermissions: {
-            include: {
-              permission: true,
-            },
+          roleMenus: {
+            select: { menuId: true },
           },
           _count: {
             select: { userRoles: true },
@@ -180,12 +166,7 @@ export async function PUT(request: NextRequest) {
     const formattedRole = {
       ...result!,
       userCount: result!._count.userRoles,
-      permissions: result!.rolePermissions.map((rp) => ({
-        id: rp.permission.id,
-        name: rp.permission.name,
-        code: rp.permission.code,
-        type: rp.permission.type,
-      })),
+      menuIds: result!.roleMenus.map((rm) => rm.menuId),
     }
 
     return NextResponse.json(formattedRole)

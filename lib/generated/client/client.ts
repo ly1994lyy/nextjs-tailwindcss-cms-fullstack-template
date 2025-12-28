@@ -74,3 +74,8 @@ export type UserRole = Prisma.UserRoleModel
  * 
  */
 export type RolePermission = Prisma.RolePermissionModel
+/**
+ * Model RoleMenu
+ * 
+ */
+export type RoleMenu = Prisma.RoleMenuModel

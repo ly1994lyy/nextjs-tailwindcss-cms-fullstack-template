@@ -274,6 +274,7 @@ export type MenuWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Menu"> | Date | string
   parent?: Prisma.XOR<Prisma.MenuNullableScalarRelationFilter, Prisma.MenuWhereInput> | null
   children?: Prisma.MenuListRelationFilter
+  roleMenus?: Prisma.RoleMenuListRelationFilter
 }
 
 export type MenuOrderByWithRelationInput = {
@@ -290,6 +291,7 @@ export type MenuOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   parent?: Prisma.MenuOrderByWithRelationInput
   children?: Prisma.MenuOrderByRelationAggregateInput
+  roleMenus?: Prisma.RoleMenuOrderByRelationAggregateInput
 }
 
 export type MenuWhereUniqueInput = Prisma.AtLeast<{
@@ -309,6 +311,7 @@ export type MenuWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"Menu"> | Date | string
   parent?: Prisma.XOR<Prisma.MenuNullableScalarRelationFilter, Prisma.MenuWhereInput> | null
   children?: Prisma.MenuListRelationFilter
+  roleMenus?: Prisma.RoleMenuListRelationFilter
 }, "id">
 
 export type MenuOrderByWithAggregationInput = {
@@ -359,6 +362,7 @@ export type MenuCreateInput = {
   updatedAt?: Date | string
   parent?: Prisma.MenuCreateNestedOneWithoutChildrenInput
   children?: Prisma.MenuCreateNestedManyWithoutParentInput
+  roleMenus?: Prisma.RoleMenuCreateNestedManyWithoutMenuInput
 }
 
 export type MenuUncheckedCreateInput = {
@@ -374,6 +378,7 @@ export type MenuUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   children?: Prisma.MenuUncheckedCreateNestedManyWithoutParentInput
+  roleMenus?: Prisma.RoleMenuUncheckedCreateNestedManyWithoutMenuInput
 }
 
 export type MenuUpdateInput = {
@@ -388,6 +393,7 @@ export type MenuUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   parent?: Prisma.MenuUpdateOneWithoutChildrenNestedInput
   children?: Prisma.MenuUpdateManyWithoutParentNestedInput
+  roleMenus?: Prisma.RoleMenuUpdateManyWithoutMenuNestedInput
 }
 
 export type MenuUncheckedUpdateInput = {
@@ -403,6 +409,7 @@ export type MenuUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   children?: Prisma.MenuUncheckedUpdateManyWithoutParentNestedInput
+  roleMenus?: Prisma.RoleMenuUncheckedUpdateManyWithoutMenuNestedInput
 }
 
 export type MenuCreateManyInput = {
@@ -514,6 +521,11 @@ export type MenuSumOrderByAggregateInput = {
   sortOrder?: Prisma.SortOrder
 }
 
+export type MenuScalarRelationFilter = {
+  is?: Prisma.MenuWhereInput
+  isNot?: Prisma.MenuWhereInput
+}
+
 export type MenuCreateNestedOneWithoutChildrenInput = {
   create?: Prisma.XOR<Prisma.MenuCreateWithoutChildrenInput, Prisma.MenuUncheckedCreateWithoutChildrenInput>
   connectOrCreate?: Prisma.MenuCreateOrConnectWithoutChildrenInput
@@ -572,6 +584,20 @@ export type MenuUncheckedUpdateManyWithoutParentNestedInput = {
   deleteMany?: Prisma.MenuScalarWhereInput | Prisma.MenuScalarWhereInput[]
 }
 
+export type MenuCreateNestedOneWithoutRoleMenusInput = {
+  create?: Prisma.XOR<Prisma.MenuCreateWithoutRoleMenusInput, Prisma.MenuUncheckedCreateWithoutRoleMenusInput>
+  connectOrCreate?: Prisma.MenuCreateOrConnectWithoutRoleMenusInput
+  connect?: Prisma.MenuWhereUniqueInput
+}
+
+export type MenuUpdateOneRequiredWithoutRoleMenusNestedInput = {
+  create?: Prisma.XOR<Prisma.MenuCreateWithoutRoleMenusInput, Prisma.MenuUncheckedCreateWithoutRoleMenusInput>
+  connectOrCreate?: Prisma.MenuCreateOrConnectWithoutRoleMenusInput
+  upsert?: Prisma.MenuUpsertWithoutRoleMenusInput
+  connect?: Prisma.MenuWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.MenuUpdateToOneWithWhereWithoutRoleMenusInput, Prisma.MenuUpdateWithoutRoleMenusInput>, Prisma.MenuUncheckedUpdateWithoutRoleMenusInput>
+}
+
 export type MenuCreateWithoutChildrenInput = {
   name: string
   path?: string | null
@@ -583,6 +609,7 @@ export type MenuCreateWithoutChildrenInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   parent?: Prisma.MenuCreateNestedOneWithoutChildrenInput
+  roleMenus?: Prisma.RoleMenuCreateNestedManyWithoutMenuInput
 }
 
 export type MenuUncheckedCreateWithoutChildrenInput = {
@@ -597,6 +624,7 @@ export type MenuUncheckedCreateWithoutChildrenInput = {
   status?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  roleMenus?: Prisma.RoleMenuUncheckedCreateNestedManyWithoutMenuInput
 }
 
 export type MenuCreateOrConnectWithoutChildrenInput = {
@@ -615,6 +643,7 @@ export type MenuCreateWithoutParentInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   children?: Prisma.MenuCreateNestedManyWithoutParentInput
+  roleMenus?: Prisma.RoleMenuCreateNestedManyWithoutMenuInput
 }
 
 export type MenuUncheckedCreateWithoutParentInput = {
@@ -629,6 +658,7 @@ export type MenuUncheckedCreateWithoutParentInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   children?: Prisma.MenuUncheckedCreateNestedManyWithoutParentInput
+  roleMenus?: Prisma.RoleMenuUncheckedCreateNestedManyWithoutMenuInput
 }
 
 export type MenuCreateOrConnectWithoutParentInput = {
@@ -663,6 +693,7 @@ export type MenuUpdateWithoutChildrenInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   parent?: Prisma.MenuUpdateOneWithoutChildrenNestedInput
+  roleMenus?: Prisma.RoleMenuUpdateManyWithoutMenuNestedInput
 }
 
 export type MenuUncheckedUpdateWithoutChildrenInput = {
@@ -677,6 +708,7 @@ export type MenuUncheckedUpdateWithoutChildrenInput = {
   status?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  roleMenus?: Prisma.RoleMenuUncheckedUpdateManyWithoutMenuNestedInput
 }
 
 export type MenuUpsertWithWhereUniqueWithoutParentInput = {
@@ -712,6 +744,80 @@ export type MenuScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Menu"> | Date | string
 }
 
+export type MenuCreateWithoutRoleMenusInput = {
+  name: string
+  path?: string | null
+  icon?: string | null
+  type: string
+  permissionCode?: string | null
+  sortOrder?: number
+  status?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  parent?: Prisma.MenuCreateNestedOneWithoutChildrenInput
+  children?: Prisma.MenuCreateNestedManyWithoutParentInput
+}
+
+export type MenuUncheckedCreateWithoutRoleMenusInput = {
+  id?: number
+  name: string
+  path?: string | null
+  icon?: string | null
+  parentId?: number | null
+  type: string
+  permissionCode?: string | null
+  sortOrder?: number
+  status?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  children?: Prisma.MenuUncheckedCreateNestedManyWithoutParentInput
+}
+
+export type MenuCreateOrConnectWithoutRoleMenusInput = {
+  where: Prisma.MenuWhereUniqueInput
+  create: Prisma.XOR<Prisma.MenuCreateWithoutRoleMenusInput, Prisma.MenuUncheckedCreateWithoutRoleMenusInput>
+}
+
+export type MenuUpsertWithoutRoleMenusInput = {
+  update: Prisma.XOR<Prisma.MenuUpdateWithoutRoleMenusInput, Prisma.MenuUncheckedUpdateWithoutRoleMenusInput>
+  create: Prisma.XOR<Prisma.MenuCreateWithoutRoleMenusInput, Prisma.MenuUncheckedCreateWithoutRoleMenusInput>
+  where?: Prisma.MenuWhereInput
+}
+
+export type MenuUpdateToOneWithWhereWithoutRoleMenusInput = {
+  where?: Prisma.MenuWhereInput
+  data: Prisma.XOR<Prisma.MenuUpdateWithoutRoleMenusInput, Prisma.MenuUncheckedUpdateWithoutRoleMenusInput>
+}
+
+export type MenuUpdateWithoutRoleMenusInput = {
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  path?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  permissionCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  parent?: Prisma.MenuUpdateOneWithoutChildrenNestedInput
+  children?: Prisma.MenuUpdateManyWithoutParentNestedInput
+}
+
+export type MenuUncheckedUpdateWithoutRoleMenusInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  path?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  parentId?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  permissionCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sortOrder?: Prisma.IntFieldUpdateOperationsInput | number
+  status?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  children?: Prisma.MenuUncheckedUpdateManyWithoutParentNestedInput
+}
+
 export type MenuCreateManyParentInput = {
   id?: number
   name: string
@@ -736,6 +842,7 @@ export type MenuUpdateWithoutParentInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   children?: Prisma.MenuUpdateManyWithoutParentNestedInput
+  roleMenus?: Prisma.RoleMenuUpdateManyWithoutMenuNestedInput
 }
 
 export type MenuUncheckedUpdateWithoutParentInput = {
@@ -750,6 +857,7 @@ export type MenuUncheckedUpdateWithoutParentInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   children?: Prisma.MenuUncheckedUpdateManyWithoutParentNestedInput
+  roleMenus?: Prisma.RoleMenuUncheckedUpdateManyWithoutMenuNestedInput
 }
 
 export type MenuUncheckedUpdateManyWithoutParentInput = {
@@ -772,10 +880,12 @@ export type MenuUncheckedUpdateManyWithoutParentInput = {
 
 export type MenuCountOutputType = {
   children: number
+  roleMenus: number
 }
 
 export type MenuCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   children?: boolean | MenuCountOutputTypeCountChildrenArgs
+  roleMenus?: boolean | MenuCountOutputTypeCountRoleMenusArgs
 }
 
 /**
@@ -795,6 +905,13 @@ export type MenuCountOutputTypeCountChildrenArgs<ExtArgs extends runtime.Types.E
   where?: Prisma.MenuWhereInput
 }
 
+/**
+ * MenuCountOutputType without action
+ */
+export type MenuCountOutputTypeCountRoleMenusArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.RoleMenuWhereInput
+}
+
 
 export type MenuSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -810,6 +927,7 @@ export type MenuSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   updatedAt?: boolean
   parent?: boolean | Prisma.Menu$parentArgs<ExtArgs>
   children?: boolean | Prisma.Menu$childrenArgs<ExtArgs>
+  roleMenus?: boolean | Prisma.Menu$roleMenusArgs<ExtArgs>
   _count?: boolean | Prisma.MenuCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["menu"]>
 
@@ -861,6 +979,7 @@ export type MenuOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = run
 export type MenuInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   parent?: boolean | Prisma.Menu$parentArgs<ExtArgs>
   children?: boolean | Prisma.Menu$childrenArgs<ExtArgs>
+  roleMenus?: boolean | Prisma.Menu$roleMenusArgs<ExtArgs>
   _count?: boolean | Prisma.MenuCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type MenuIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -875,6 +994,7 @@ export type $MenuPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   objects: {
     parent: Prisma.$MenuPayload<ExtArgs> | null
     children: Prisma.$MenuPayload<ExtArgs>[]
+    roleMenus: Prisma.$RoleMenuPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -1284,6 +1404,7 @@ export interface Prisma__MenuClient<T, Null = never, ExtArgs extends runtime.Typ
   readonly [Symbol.toStringTag]: "PrismaPromise"
   parent<T extends Prisma.Menu$parentArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Menu$parentArgs<ExtArgs>>): Prisma.Prisma__MenuClient<runtime.Types.Result.GetResult<Prisma.$MenuPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   children<T extends Prisma.Menu$childrenArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Menu$childrenArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$MenuPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  roleMenus<T extends Prisma.Menu$roleMenusArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Menu$roleMenusArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RoleMenuPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1760,6 +1881,30 @@ export type Menu$childrenArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   distinct?: Prisma.MenuScalarFieldEnum | Prisma.MenuScalarFieldEnum[]
+}
+
+/**
+ * Menu.roleMenus
+ */
+export type Menu$roleMenusArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the RoleMenu
+   */
+  select?: Prisma.RoleMenuSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the RoleMenu
+   */
+  omit?: Prisma.RoleMenuOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RoleMenuInclude<ExtArgs> | null
+  where?: Prisma.RoleMenuWhereInput
+  orderBy?: Prisma.RoleMenuOrderByWithRelationInput | Prisma.RoleMenuOrderByWithRelationInput[]
+  cursor?: Prisma.RoleMenuWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.RoleMenuScalarFieldEnum | Prisma.RoleMenuScalarFieldEnum[]
 }
 
 /**

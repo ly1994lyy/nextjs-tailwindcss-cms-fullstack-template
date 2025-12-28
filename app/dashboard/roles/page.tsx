@@ -28,11 +28,12 @@ import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
 
-interface Permission {
+interface Menu {
   id: number
   name: string
-  code: string
+  parentId: number | null
   type: string
+  children?: Menu[]
 }
 
 interface Role {
@@ -40,7 +41,7 @@ interface Role {
   name: string
   code: string
   description: string | null
-  permissions: Permission[]
+  menuIds: number[]
   userCount: number
   createdAt: string
   status: string
@@ -49,7 +50,7 @@ interface Role {
 export default function RolesPage() {
   const { hasPermission } = useAuth()
   const [roles, setRoles] = useState<Role[]>([])
-  const [availablePermissions, setAvailablePermissions] = useState<Permission[]>([])
+  const [menus, setMenus] = useState<Menu[]>([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(0)
@@ -63,7 +64,7 @@ export default function RolesPage() {
     name: "",
     code: "",
     description: "",
-    permissions: [] as number[],
+    menuIds: [] as number[],
     status: "active",
   })
 
@@ -75,7 +76,7 @@ export default function RolesPage() {
   }, [currentPage, searchQuery])
 
   useEffect(() => {
-    fetchPermissions()
+    fetchMenus()
   }, [])
 
   const fetchRoles = async () => {
@@ -98,17 +99,17 @@ export default function RolesPage() {
     }
   }
 
-  const fetchPermissions = async () => {
+  const fetchMenus = async () => {
     try {
-      const res = await fetch("/api/permissions?pageSize=500")
+      const res = await fetch("/api/menus")
       if (res.ok) {
         const data = await res.json()
-        setAvailablePermissions(data.data || [])
+        setMenus(data)
       } else {
-        toast.error("获取权限列表失败")
+        toast.error("获取菜单列表失败")
       }
     } catch (error) {
-      console.error("Failed to fetch permissions", error)
+      console.error("Failed to fetch menus", error)
     }
   }
 
@@ -120,22 +121,98 @@ export default function RolesPage() {
         code: role.code,
         description: role.description || "",
         status: role.status,
-        permissions: role.permissions.map((p) => p.id),
+        menuIds: role.menuIds || [],
       })
     } else {
       setEditingRole(null)
-      setFormData({ name: "", code: "", description: "", status: "active", permissions: [] })
+      setFormData({ name: "", code: "", description: "", status: "active", menuIds: [] })
     }
     setDialogOpen(true)
   }
 
-  const handleTogglePermission = (permissionId: number) => {
-    setFormData({
-      ...formData,
-      permissions: formData.permissions.includes(permissionId)
-        ? formData.permissions.filter((p) => p !== permissionId)
-        : [...formData.permissions, permissionId],
+  // Build Tree
+  const buildTree = (items: Menu[]): Menu[] => {
+    const map = new Map<number, Menu>()
+    const roots: Menu[] = []
+    // Deep copy
+    const nodes = items.map((item) => ({ ...item, children: [] }))
+    nodes.forEach((item) => map.set(item.id, item))
+    nodes.forEach((item) => {
+      if (item.parentId && map.has(item.parentId)) {
+        map.get(item.parentId)!.children!.push(item)
+      } else {
+        roots.push(item)
+      }
     })
+    return roots
+  }
+
+  const menuTree = buildTree(menus)
+
+  const handleToggleMenu = (menuId: number, checked: boolean) => {
+    let newMenuIds = new Set(formData.menuIds)
+
+    // Helper to process children recursively
+    const toggleChildren = (parentId: number, check: boolean) => {
+      const children = menus.filter((m) => m.parentId === parentId)
+      children.forEach((child) => {
+        if (check) newMenuIds.add(child.id)
+        else newMenuIds.delete(child.id)
+        toggleChildren(child.id, check)
+      })
+    }
+
+    if (checked) {
+      newMenuIds.add(menuId)
+      toggleChildren(menuId, true)
+
+      // Auto-check parents
+      let current = menus.find((m) => m.id === menuId)
+      while (current && current.parentId) {
+        newMenuIds.add(current.parentId)
+        current = menus.find((m) => m.id === current!.parentId)
+      }
+    } else {
+      newMenuIds.delete(menuId)
+      toggleChildren(menuId, false)
+    }
+
+    setFormData({ ...formData, menuIds: Array.from(newMenuIds) })
+  }
+
+  // Recursive Tree Renderer for Checkboxes
+  const renderMenuCheckbox = (menu: Menu, level = 0) => {
+    const hasChildren = menu.children && menu.children.length > 0
+    return (
+      <div key={menu.id} style={{ marginLeft: level * 20 }} className="py-1">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id={`menu-${menu.id}`}
+            checked={formData.menuIds.includes(menu.id)}
+            onCheckedChange={(checked) => handleToggleMenu(menu.id, checked as boolean)}
+          />
+          <label
+            htmlFor={`menu-${menu.id}`}
+            className="flex cursor-pointer items-center gap-2 text-sm leading-none font-medium"
+          >
+            {menu.name}
+            {menu.type === "button" && (
+              <Badge
+                variant="outline"
+                className="h-4 border-blue-200 bg-blue-50 px-1 py-0 text-[10px] text-blue-700"
+              >
+                按钮
+              </Badge>
+            )}
+          </label>
+        </div>
+        {hasChildren && (
+          <div className="border-muted mt-1 ml-2 border-l">
+            {menu.children!.map((child) => renderMenuCheckbox(child, level + 1))}
+          </div>
+        )}
+      </div>
+    )
   }
 
   const handleSave = async () => {
@@ -147,7 +224,7 @@ export default function RolesPage() {
         code: formData.code,
         description: formData.description,
         status: formData.status,
-        permissionIds: formData.permissions,
+        menuIds: formData.menuIds,
       }
 
       if (editingRole) {
@@ -199,17 +276,6 @@ export default function RolesPage() {
     }
   }
 
-  const groupedPermissions = availablePermissions.reduce(
-    (acc, permission) => {
-      if (!acc[permission.type]) {
-        acc[permission.type] = []
-      }
-      acc[permission.type].push(permission)
-      return acc
-    },
-    {} as Record<string, Permission[]>,
-  )
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -248,7 +314,7 @@ export default function RolesPage() {
                   <TableHead className="text-center">角色名称</TableHead>
                   <TableHead className="text-center">编码</TableHead>
                   <TableHead className="text-center">描述</TableHead>
-                  <TableHead className="text-center">权限</TableHead>
+                  <TableHead className="text-center">权限菜单</TableHead>
                   <TableHead className="text-center">用户数量</TableHead>
                   <TableHead className="text-center">创建时间</TableHead>
                   {(canWrite || canDelete) && <TableHead className="text-center">操作</TableHead>}
@@ -276,21 +342,7 @@ export default function RolesPage() {
                       <TableCell className="text-center">{role.code}</TableCell>
                       <TableCell className="text-center">{role.description}</TableCell>
                       <TableCell className="text-center">
-                        <div className="flex flex-wrap justify-center gap-1">
-                          {role.permissions.some((p) => p.code === "*") ? (
-                            <Badge>所有权限</Badge>
-                          ) : (
-                            role.permissions.slice(0, 3).map((perm) => (
-                              <Badge key={perm.id} variant="secondary">
-                                {perm.name}
-                              </Badge>
-                            ))
-                          )}
-                          {role.permissions.length > 3 &&
-                            !role.permissions.some((p) => p.code === "*") && (
-                              <Badge variant="outline">+{role.permissions.length - 3}</Badge>
-                            )}
-                        </div>
+                        <Badge variant="secondary">{role.menuIds?.length || 0} 个菜单/权限</Badge>
                       </TableCell>
                       <TableCell className="text-center">{role.userCount}</TableCell>
                       <TableCell className="text-center">
@@ -392,30 +444,12 @@ export default function RolesPage() {
               </select>
             </div>
             <div className="space-y-3">
-              <Label>权限配置</Label>
-              <div className="border-border space-y-4 rounded-lg border p-4">
-                {Object.entries(groupedPermissions).map(([category, permissions]) => (
-                  <div key={category} className="space-y-2">
-                    <h4 className="text-sm font-medium">{category}</h4>
-                    <div className="ml-4 grid grid-cols-2 gap-3">
-                      {permissions.map((permission) => (
-                        <div key={permission.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={permission.id.toString()}
-                            checked={formData.permissions.includes(permission.id)}
-                            onCheckedChange={() => handleTogglePermission(permission.id)}
-                          />
-                          <label
-                            htmlFor={permission.id.toString()}
-                            className="cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                          >
-                            {permission.name}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+              <Label>权限菜单配置</Label>
+              <div className="border-border max-h-[400px] space-y-4 overflow-y-auto rounded-lg border p-4">
+                {menuTree.map((menu) => renderMenuCheckbox(menu))}
+                {menuTree.length === 0 && (
+                  <p className="text-muted-foreground text-sm">暂无菜单数据</p>
+                )}
               </div>
             </div>
           </div>

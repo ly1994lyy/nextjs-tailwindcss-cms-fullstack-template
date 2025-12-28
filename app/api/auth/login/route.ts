@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import prisma from "@/lib/prisma"
 import { verifyPassword } from "@/lib/password"
 
 export async function POST(request: NextRequest) {
@@ -10,61 +10,70 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "用户名和密码不能为空" }, { status: 400 })
     }
 
-    // 查询用户
-    const users = await sql`
-      SELECT 
-        u.id, u.username, u.password, u.real_name, u.email, u.phone, 
-        u.department_id, u.status, d.name as department_name
-      FROM users u
-      LEFT JOIN departments d ON u.department_id = d.id
-      WHERE u.username = ${username}
-    `
+    // Find user
+    const user = await prisma.user.findUnique({
+      where: { username },
+      include: {
+        department: true,
+        userRoles: {
+          include: {
+            role: {
+              include: {
+                roleMenus: {
+                  include: {
+                    menu: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
 
-    if (users.length === 0) {
+    if (!user) {
       return NextResponse.json({ error: "用户名或密码错误" }, { status: 401 })
     }
-
-    const user = users[0]
 
     if (user.status !== "active") {
       return NextResponse.json({ error: "用户已被禁用" }, { status: 403 })
     }
 
-    // 验证密码
+    // Verify password
     const isValid = await verifyPassword(password, user.password)
     if (!isValid) {
       return NextResponse.json({ error: "用户名或密码错误" }, { status: 401 })
     }
 
-    // 查询用户角色
-    const roles = await sql`
-      SELECT r.id, r.name, r.code
-      FROM roles r
-      INNER JOIN user_roles ur ON r.id = ur.role_id
-      WHERE ur.user_id = ${user.id}
-    `
+    // Extract roles
+    const roles = user.userRoles.map((ur) => ({
+      id: ur.role.id,
+      name: ur.role.name,
+      code: ur.role.code,
+    }))
 
-    // 查询用户权限
-    const permissions = await sql`
-      SELECT DISTINCT p.code
-      FROM permissions p
-      INNER JOIN role_permissions rp ON p.id = rp.permission_id
-      INNER JOIN user_roles ur ON rp.role_id = ur.role_id
-      WHERE ur.user_id = ${user.id} AND p.status = 'active'
-    `
+    // Extract permissions from menus
+    const permissions = new Set<string>()
+    user.userRoles.forEach((ur) => {
+      ur.role.roleMenus.forEach((rm) => {
+        if (rm.menu.permissionCode && rm.menu.status === "active") {
+          permissions.add(rm.menu.permissionCode)
+        }
+      })
+    })
 
     const response = {
       user: {
         id: user.id,
         username: user.username,
-        realName: user.real_name,
+        realName: user.realName,
         email: user.email,
         phone: user.phone,
-        departmentId: user.department_id,
-        departmentName: user.department_name,
+        departmentId: user.departmentId,
+        departmentName: user.department?.name,
       },
-      roles: roles.map((r) => ({ id: r.id, name: r.name, code: r.code })),
-      permissions: permissions.map((p) => p.code),
+      roles,
+      permissions: Array.from(permissions),
     }
 
     return NextResponse.json(response)

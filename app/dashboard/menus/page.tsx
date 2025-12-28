@@ -54,9 +54,11 @@ export default function MenusPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+
   const [editingMenu, setEditingMenu] = useState<Menu | null>(null)
   const [deletingMenuId, setDeletingMenuId] = useState<number | null>(null)
   const [expandedMenus, setExpandedMenus] = useState<Set<number>>(new Set())
+  const [submitting, setSubmitting] = useState(false)
 
   // Form state
   const [formData, setFormData] = useState({
@@ -163,6 +165,8 @@ export default function MenusPage() {
   }
 
   const handleSubmit = async () => {
+    if (submitting) return
+    setSubmitting(true)
     try {
       const url = "/api/menus"
       const method = editingMenu ? "PUT" : "POST"
@@ -192,17 +196,29 @@ export default function MenusPage() {
         setDialogOpen(false)
         fetchMenus()
       } else {
-        const errorData = await res.json()
-        toast.error(errorData.error || "操作失败")
+        const text = await res.text()
+        let errorMsg = editingMenu ? "菜单更新失败" : "菜单创建失败"
+        try {
+          const data = JSON.parse(text)
+          if (data && data.error) errorMsg = data.error
+        } catch {
+          if (text) errorMsg = text.slice(0, 100) // Fallback to raw text if not JSON
+        }
+
+        console.error("Save menu error:", errorMsg)
+        toast.error(errorMsg)
       }
     } catch (error) {
       console.error(error)
-      toast.error("操作失败")
+      toast.error("网络请求失败，请稍后重试")
+    } finally {
+      setSubmitting(false)
     }
   }
 
   const handleDelete = async () => {
-    if (!deletingMenuId) return
+    if (!deletingMenuId || submitting) return
+    setSubmitting(true)
 
     try {
       const res = await fetch(`/api/menus?id=${deletingMenuId}`, {
@@ -215,12 +231,23 @@ export default function MenusPage() {
         setDeletingMenuId(null)
         fetchMenus()
       } else {
-        const errorData = await res.json()
-        toast.error(errorData.error || "删除失败")
+        const text = await res.text()
+        let errorMsg = "删除失败"
+        try {
+          const data = JSON.parse(text)
+          if (data && data.error) errorMsg = data.error
+        } catch {
+          if (text) errorMsg = text.slice(0, 100)
+        }
+
+        console.error("Delete menu error:", errorMsg)
+        toast.error(errorMsg)
       }
     } catch (error) {
       console.error(error)
-      toast.error("删除失败")
+      toast.error("网络请求失败，请稍后重试")
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -464,7 +491,12 @@ export default function MenusPage() {
       </Card>
 
       {/* Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          if (!submitting) setDialogOpen(open)
+        }}
+      >
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>{editingMenu ? "编辑菜单" : "新增菜单"}</DialogTitle>
@@ -476,6 +508,7 @@ export default function MenusPage() {
               <Select
                 value={formData.type}
                 onValueChange={(value) => setFormData({ ...formData, type: value })}
+                disabled={submitting}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -493,6 +526,7 @@ export default function MenusPage() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder={formData.type === "button" ? "例如：新增用户" : "输入菜单名称"}
+                disabled={submitting}
               />
             </div>
             {formData.type !== "button" && (
@@ -502,6 +536,7 @@ export default function MenusPage() {
                   value={formData.path}
                   onChange={(e) => setFormData({ ...formData, path: e.target.value })}
                   placeholder="/dashboard/example"
+                  disabled={submitting}
                 />
               </div>
             )}
@@ -512,6 +547,7 @@ export default function MenusPage() {
                   value={formData.icon}
                   onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
                   placeholder="lucide-react 图标名称"
+                  disabled={submitting}
                 />
               </div>
             )}
@@ -520,6 +556,7 @@ export default function MenusPage() {
               <Select
                 value={formData.parentId}
                 onValueChange={(value) => setFormData({ ...formData, parentId: value })}
+                disabled={submitting}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="无（顶级菜单）" />
@@ -541,6 +578,7 @@ export default function MenusPage() {
                   value={formData.permissionCode}
                   onChange={(e) => setFormData({ ...formData, permissionCode: e.target.value })}
                   placeholder="例如: menu:read 或 user:add"
+                  disabled={submitting}
                 />
               </div>
             )}
@@ -550,6 +588,7 @@ export default function MenusPage() {
                 type="number"
                 value={formData.sortOrder}
                 onChange={(e) => setFormData({ ...formData, sortOrder: Number(e.target.value) })}
+                disabled={submitting}
               />
             </div>
             <div className="space-y-2">
@@ -559,6 +598,7 @@ export default function MenusPage() {
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                disabled={submitting}
               >
                 <option value="active">正常</option>
                 <option value="inactive">停用</option>
@@ -567,27 +607,40 @@ export default function MenusPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
               取消
             </Button>
-            <Button onClick={handleSubmit}>确定</Button>
+            <Button onClick={handleSubmit} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              确定
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Dialog */}
 
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <Dialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!submitting) setDeleteDialogOpen(open)
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>确认删除</DialogTitle>
             <DialogDescription>您确定要删除此菜单吗？此操作无法撤销。</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={submitting}
+            >
               取消
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
+            <Button variant="destructive" onClick={handleDelete} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               删除
             </Button>
           </DialogFooter>

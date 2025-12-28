@@ -59,7 +59,9 @@ export default function RolesPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [editingRole, setEditingRole] = useState<Role | null>(null)
+
   const [deletingRoleId, setDeletingRoleId] = useState<number | null>(null)
+  const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     code: "",
@@ -216,6 +218,8 @@ export default function RolesPage() {
   }
 
   const handleSave = async () => {
+    if (submitting) return
+    setSubmitting(true)
     try {
       const url = "/api/roles"
       const method = editingRole ? "PUT" : "POST"
@@ -244,17 +248,28 @@ export default function RolesPage() {
         setDialogOpen(false)
         fetchRoles()
       } else {
-        const errorData = await res.json()
-        toast.error(errorData.error || "操作失败")
+        const text = await res.text()
+        let errorMsg = editingRole ? "角色更新失败" : "角色创建失败"
+        try {
+          const data = JSON.parse(text)
+          if (data && data.error) errorMsg = data.error
+        } catch {
+          if (text) errorMsg = text.slice(0, 100)
+        }
+        console.error("Save role error:", errorMsg)
+        toast.error(errorMsg)
       }
     } catch (error) {
       console.error(error)
-      toast.error("操作失败")
+      toast.error("网络请求失败，请稍后重试")
+    } finally {
+      setSubmitting(false)
     }
   }
 
   const handleDelete = async () => {
-    if (!deletingRoleId) return
+    if (!deletingRoleId || submitting) return
+    setSubmitting(true)
 
     try {
       const res = await fetch(`/api/roles?id=${deletingRoleId}`, {
@@ -267,12 +282,22 @@ export default function RolesPage() {
         setDeletingRoleId(null)
         fetchRoles()
       } else {
-        const errorData = await res.json()
-        toast.error(errorData.error || "删除失败")
+        const text = await res.text()
+        let errorMsg = "删除失败"
+        try {
+          const data = JSON.parse(text)
+          if (data && data.error) errorMsg = data.error
+        } catch {
+          if (text) errorMsg = text.slice(0, 100)
+        }
+        console.error("Delete role error:", errorMsg)
+        toast.error(errorMsg)
       }
     } catch (error) {
       console.error(error)
-      toast.error("删除失败")
+      toast.error("网络请求失败，请稍后重试")
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -393,7 +418,12 @@ export default function RolesPage() {
       </Card>
 
       {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          if (!submitting) setDialogOpen(open)
+        }}
+      >
         <DialogContent className="max-h-[80vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingRole ? "编辑角色" : "添加角色"}</DialogTitle>
@@ -410,6 +440,7 @@ export default function RolesPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="请输入角色名称"
+                  disabled={submitting}
                 />
               </div>
               <div className="space-y-2">
@@ -419,6 +450,7 @@ export default function RolesPage() {
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                   placeholder="请输入角色编码"
+                  disabled={submitting}
                 />
               </div>
             </div>
@@ -429,6 +461,7 @@ export default function RolesPage() {
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="请输入角色描述"
+                disabled={submitting}
               />
             </div>
             <div className="space-y-2">
@@ -438,6 +471,7 @@ export default function RolesPage() {
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                disabled={submitting}
               >
                 <option value="active">正常</option>
                 <option value="inactive">停用</option>
@@ -454,26 +488,39 @@ export default function RolesPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
               取消
             </Button>
-            <Button onClick={handleSave}>保存</Button>
+            <Button onClick={handleSave} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              保存
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <Dialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!submitting) setDeleteDialogOpen(open)
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>确认删除</DialogTitle>
             <DialogDescription>您确定要删除此角色吗？此操作无法撤销。</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={submitting}
+            >
               取消
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
+            <Button variant="destructive" onClick={handleDelete} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               删除
             </Button>
           </DialogFooter>

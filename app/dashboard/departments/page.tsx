@@ -51,8 +51,10 @@ export default function DepartmentsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+
   const [editingDepartment, setEditingDepartment] = useState<Department | null>(null)
   const [deletingDepartmentId, setDeletingDepartmentId] = useState<number | null>(null)
+  const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     code: "",
@@ -117,9 +119,12 @@ export default function DepartmentsPage() {
   }
 
   const handleSave = async () => {
+    if (submitting) return
+    setSubmitting(true)
     try {
       if (!formData.name || !formData.code) {
         toast.error("部门名称和编码不能为空")
+        setSubmitting(false)
         return
       }
 
@@ -135,10 +140,16 @@ export default function DepartmentsPage() {
         body: JSON.stringify(body),
       })
 
-      const data = await res.json()
-
       if (!res.ok) {
-        throw new Error(data.error || "操作失败")
+        const text = await res.text()
+        let errorMsg = editingDepartment ? "更新失败" : "创建失败"
+        try {
+          const data = JSON.parse(text)
+          if (data && data.error) errorMsg = data.error
+        } catch {
+          if (text) errorMsg = text.slice(0, 100)
+        }
+        throw new Error(errorMsg)
       }
 
       toast.success(editingDepartment ? "更新成功" : "创建成功")
@@ -147,29 +158,40 @@ export default function DepartmentsPage() {
     } catch (error: any) {
       console.error(error)
       toast.error(error.message)
+    } finally {
+      setSubmitting(false)
     }
   }
 
   const handleDelete = async () => {
-    if (deletingDepartmentId) {
-      try {
-        const res = await fetch(`/api/departments?id=${deletingDepartmentId}`, {
-          method: "DELETE",
-        })
-        const data = await res.json()
+    if (!deletingDepartmentId || submitting) return
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/departments?id=${deletingDepartmentId}`, {
+        method: "DELETE",
+      })
 
-        if (!res.ok) {
-          throw new Error(data.error || "删除失败")
+      if (!res.ok) {
+        const text = await res.text()
+        let errorMsg = "删除失败"
+        try {
+          const data = JSON.parse(text)
+          if (data && data.error) errorMsg = data.error
+        } catch {
+          if (text) errorMsg = text.slice(0, 100)
         }
-
-        toast.success("删除成功")
-        setDeleteDialogOpen(false)
-        setDeletingDepartmentId(null)
-        fetchDepartments()
-      } catch (error: any) {
-        console.error(error)
-        toast.error(error.message)
+        throw new Error(errorMsg)
       }
+
+      toast.success("删除成功")
+      setDeleteDialogOpen(false)
+      setDeletingDepartmentId(null)
+      fetchDepartments()
+    } catch (error: any) {
+      console.error(error)
+      toast.error(error.message)
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -293,7 +315,12 @@ export default function DepartmentsPage() {
       </Card>
 
       {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          if (!submitting) setDialogOpen(open)
+        }}
+      >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>{editingDepartment ? "编辑部门" : "添加部门"}</DialogTitle>
@@ -310,6 +337,7 @@ export default function DepartmentsPage() {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="请输入部门名称"
+                  disabled={submitting}
                 />
               </div>
               <div className="space-y-2">
@@ -319,6 +347,7 @@ export default function DepartmentsPage() {
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                   placeholder="请输入部门编码"
+                  disabled={submitting}
                 />
               </div>
             </div>
@@ -330,6 +359,7 @@ export default function DepartmentsPage() {
                 value={formData.parentId}
                 onChange={(e) => setFormData({ ...formData, parentId: e.target.value })}
                 className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+                disabled={submitting}
               >
                 <option value="">无上级部门</option>
                 {departments
@@ -350,6 +380,7 @@ export default function DepartmentsPage() {
                   value={formData.manager}
                   onChange={(e) => setFormData({ ...formData, manager: e.target.value })}
                   placeholder="请输入负责人"
+                  disabled={submitting}
                 />
               </div>
               <div className="space-y-2">
@@ -359,6 +390,7 @@ export default function DepartmentsPage() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="请输入联系电话"
+                  disabled={submitting}
                 />
               </div>
             </div>
@@ -371,6 +403,7 @@ export default function DepartmentsPage() {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 placeholder="请输入邮箱"
+                disabled={submitting}
               />
             </div>
 
@@ -381,30 +414,44 @@ export default function DepartmentsPage() {
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="请输入部门描述"
+                disabled={submitting}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
               取消
             </Button>
-            <Button onClick={handleSave}>保存</Button>
+            <Button onClick={handleSave} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              保存
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Delete Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <Dialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!submitting) setDeleteDialogOpen(open)
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>确认删除</DialogTitle>
             <DialogDescription>您确定要删除此部门吗？此操作无法撤销。</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={submitting}
+            >
               取消
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
+            <Button variant="destructive" onClick={handleDelete} disabled={submitting}>
+              {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               删除
             </Button>
           </DialogFooter>

@@ -6,6 +6,7 @@ import { AuthProvider } from "@/lib/auth-context"
 import { I18nProvider } from "@/lib/i18n-context"
 import { ThemeProvider } from "@/lib/theme-context"
 import { TabsProvider } from "@/lib/tabs-context"
+import { Toaster } from "sonner"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -46,6 +47,7 @@ export default function RootLayout({
           <I18nProvider>
             <AuthProvider>
               <TabsProvider>{children}</TabsProvider>
+              <Toaster />
             </AuthProvider>
           </I18nProvider>
         </ThemeProvider>

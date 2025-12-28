@@ -26,6 +26,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth-context"
+import { useI18n } from "@/lib/i18n-context"
 import { toast } from "sonner"
 
 interface Menu {
@@ -49,6 +50,7 @@ interface Role {
 
 export default function RolesPage() {
   const { hasPermission } = useAuth()
+  const { t } = useI18n()
   const [roles, setRoles] = useState<Role[]>([])
   const [menus, setMenus] = useState<Menu[]>([])
   const [loading, setLoading] = useState(true)
@@ -90,11 +92,11 @@ export default function RolesPage() {
         setTotalPages(data.totalPages)
         setTotalCount(data.total)
       } else {
-        toast.error("获取角色列表失败")
+        toast.error(t("menu.noData"))
       }
     } catch (error) {
       console.error(error)
-      toast.error("获取角色列表失败")
+      toast.error(t("menu.noData"))
     } finally {
       setLoading(false)
     }
@@ -107,7 +109,7 @@ export default function RolesPage() {
         const data = await res.json()
         setMenus(data)
       } else {
-        toast.error("获取菜单列表失败")
+        toast.error(t("menu.noData"))
       }
     } catch (error) {
       console.error("Failed to fetch menus", error)
@@ -201,7 +203,7 @@ export default function RolesPage() {
                 variant="outline"
                 className="h-4 border-blue-200 bg-blue-50 px-1 py-0 text-[10px] text-blue-700"
               >
-                按钮
+                {t("role.button")}
               </Badge>
             )}
           </label>
@@ -241,12 +243,12 @@ export default function RolesPage() {
       })
 
       if (res.ok) {
-        toast.success(editingRole ? "角色更新成功" : "角色创建成功")
+        toast.success(editingRole ? t("role.editDescription") : t("role.addDescription"))
         setDialogOpen(false)
         fetchRoles()
       } else {
         const text = await res.text()
-        let errorMsg = editingRole ? "角色更新失败" : "角色创建失败"
+        let errorMsg = "Error"
         try {
           const data = JSON.parse(text)
           if (data && data.error) errorMsg = data.error
@@ -258,7 +260,7 @@ export default function RolesPage() {
       }
     } catch (error) {
       console.error(error)
-      toast.error("网络请求失败，请稍后重试")
+      toast.error(t("menu.noData"))
     } finally {
       setSubmitting(false)
     }
@@ -274,13 +276,13 @@ export default function RolesPage() {
       })
 
       if (res.ok) {
-        toast.success("角色删除成功")
+        toast.success(t("role.deleteConfirmation"))
         setDeleteDialogOpen(false)
         setDeletingRoleId(null)
         fetchRoles()
       } else {
         const text = await res.text()
-        let errorMsg = "删除失败"
+        let errorMsg = "Delete failed"
         try {
           const data = JSON.parse(text)
           if (data && data.error) errorMsg = data.error
@@ -292,7 +294,7 @@ export default function RolesPage() {
       }
     } catch (error) {
       console.error(error)
-      toast.error("网络请求失败，请稍后重试")
+      toast.error(t("menu.noData"))
     } finally {
       setSubmitting(false)
     }
@@ -302,25 +304,25 @@ export default function RolesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">角色管理</h1>
-          <p className="text-muted-foreground mt-2">管理系统角色及其权限配置</p>
+          <h1 className="text-3xl font-bold">{t("role.title")}</h1>
+          <p className="text-muted-foreground mt-2">{t("role.description")}</p>
         </div>
         {canWrite && (
           <Button onClick={() => handleOpenDialog()}>
             <Plus className="mr-2 h-4 w-4" />
-            添加角色
+            {t("role.add")}
           </Button>
         )}
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>角色列表</CardTitle>
+          <CardTitle>{t("role.list")}</CardTitle>
           <div className="mt-4 flex items-center gap-2">
             <div className="relative max-w-sm flex-1">
               <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
               <Input
-                placeholder="搜索角色..."
+                placeholder={t("role.search")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -333,13 +335,15 @@ export default function RolesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-center">角色名称</TableHead>
-                  <TableHead className="w-[80px] text-center">ID</TableHead>
-                  <TableHead className="text-center">描述</TableHead>
-                  <TableHead className="text-center">权限菜单</TableHead>
-                  <TableHead className="text-center">用户数量</TableHead>
-                  <TableHead className="text-center">创建时间</TableHead>
-                  {(canWrite || canDelete) && <TableHead className="text-center">操作</TableHead>}
+                  <TableHead className="text-center">{t("role.name")}</TableHead>
+                  <TableHead className="w-[80px] text-center">{t("role.id")}</TableHead>
+                  <TableHead className="text-center">{t("role.desc")}</TableHead>
+                  <TableHead className="text-center">{t("role.permissions")}</TableHead>
+                  <TableHead className="text-center">{t("role.userCount")}</TableHead>
+                  <TableHead className="text-center">{t("role.createTime")}</TableHead>
+                  {(canWrite || canDelete) && (
+                    <TableHead className="text-center">{t("common.actions")}</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -354,7 +358,7 @@ export default function RolesPage() {
                 ) : roles.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center">
-                      暂无数据
+                      {t("menu.noData")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -364,7 +368,9 @@ export default function RolesPage() {
                       <TableCell className="text-center">{role.id}</TableCell>
                       <TableCell className="text-center">{role.description}</TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="secondary">{role.menuIds?.length || 0} 个菜单/权限</Badge>
+                        <Badge variant="secondary">
+                          {role.menuIds?.length || 0} {t("role.menuPermissionCount")}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-center">{role.userCount}</TableCell>
                       <TableCell className="text-center">
@@ -423,36 +429,36 @@ export default function RolesPage() {
       >
         <DialogContent className="max-h-[80vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingRole ? "编辑角色" : "添加角色"}</DialogTitle>
+            <DialogTitle>{editingRole ? t("role.edit") : t("role.add")}</DialogTitle>
             <DialogDescription>
-              {editingRole ? "修改角色信息和权限配置" : "创建新的角色并分配权限"}
+              {editingRole ? t("role.editDescription") : t("role.addDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">角色名称</Label>
+                <Label htmlFor="name">{t("role.name")}</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="请输入角色名称"
+                  placeholder={t("role.enterName")}
                   disabled={submitting}
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">描述</Label>
+              <Label htmlFor="description">{t("role.desc")}</Label>
               <Input
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="请输入角色描述"
+                placeholder={t("role.enterDescription")}
                 disabled={submitting}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="status">状态</Label>
+              <Label htmlFor="status">{t("user.status")}</Label>
               <select
                 id="status"
                 value={formData.status}
@@ -460,27 +466,27 @@ export default function RolesPage() {
                 className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                 disabled={submitting}
               >
-                <option value="active">正常</option>
-                <option value="inactive">停用</option>
+                <option value="active">{t("user.active")}</option>
+                <option value="inactive">{t("user.inactive")}</option>
               </select>
             </div>
             <div className="space-y-3">
-              <Label>权限菜单配置</Label>
+              <Label>{t("role.permissionConfig")}</Label>
               <div className="border-border max-h-[400px] space-y-4 overflow-y-auto rounded-lg border p-4">
                 {menuTree.map((menu) => renderMenuCheckbox(menu))}
                 {menuTree.length === 0 && (
-                  <p className="text-muted-foreground text-sm">暂无菜单数据</p>
+                  <p className="text-muted-foreground text-sm">{t("role.noMenuData")}</p>
                 )}
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
-              取消
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleSave} disabled={submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              保存
+              {t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -495,8 +501,8 @@ export default function RolesPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>确认删除</DialogTitle>
-            <DialogDescription>您确定要删除此角色吗？此操作无法撤销。</DialogDescription>
+            <DialogTitle>{t("role.confirmDelete")}</DialogTitle>
+            <DialogDescription>{t("role.deleteConfirmation")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
@@ -504,11 +510,11 @@ export default function RolesPage() {
               onClick={() => setDeleteDialogOpen(false)}
               disabled={submitting}
             >
-              取消
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              删除
+              {t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

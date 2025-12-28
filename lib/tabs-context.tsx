@@ -7,6 +7,7 @@ interface Tab {
   key: string
   title: string
   path: string
+  translationKey?: string
 }
 
 interface TabsContextType {
@@ -21,7 +22,7 @@ const TabsContext = createContext<TabsContextType | undefined>(undefined)
 
 export function TabsProvider({ children }: { children: React.ReactNode }) {
   const [tabs, setTabs] = useState<Tab[]>([
-    { key: "/dashboard", title: "仪表板", path: "/dashboard" },
+    { key: "/dashboard", title: "仪表板", path: "/dashboard", translationKey: "menu.dashboard" },
   ])
   const [activeTab, setActiveTab] = useState("/dashboard")
 

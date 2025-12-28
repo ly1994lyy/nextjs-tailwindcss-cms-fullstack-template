@@ -169,18 +169,26 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { tabs, activeTab, addTab, removeTab, setActiveTab } = useTabs()
 
   useEffect(() => {
-    const getTabTitle = (path: string) => {
-      if (path === "/dashboard") return t("menu.dashboard")
-      if (path === "/dashboard/departments") return t("menu.departments")
-      if (path === "/dashboard/users") return t("menu.users")
-      if (path === "/dashboard/roles") return t("menu.roles")
-      if (path === "/dashboard/permissions") return t("menu.permissions")
-      if (path === "/dashboard/menus") return t("menu.menus")
-      if (path === "/dashboard/settings") return t("menu.settings")
-      return path.split("/").pop() || ""
+    const getTabInfo = (path: string) => {
+      if (path === "/dashboard")
+        return { title: t("menu.dashboard"), translationKey: "menu.dashboard" }
+      if (path === "/dashboard/departments")
+        return { title: t("menu.departments"), translationKey: "menu.departments" }
+      if (path === "/dashboard/users")
+        return { title: t("menu.users"), translationKey: "menu.users" }
+      if (path === "/dashboard/roles")
+        return { title: t("menu.roles"), translationKey: "menu.roles" }
+      if (path === "/dashboard/permissions")
+        return { title: t("menu.permissions"), translationKey: "menu.permissions" }
+      if (path === "/dashboard/menus")
+        return { title: t("menu.menus"), translationKey: "menu.menus" }
+      if (path === "/dashboard/settings")
+        return { title: t("menu.settings"), translationKey: "menu.settings" }
+      return { title: path.split("/").pop() || "", translationKey: undefined }
     }
 
-    addTab({ key: pathname, title: getTabTitle(pathname), path: pathname })
+    const { title, translationKey } = getTabInfo(pathname)
+    addTab({ key: pathname, title, path: pathname, translationKey })
   }, [pathname])
 
   const breadcrumbs = pathname.split("/").filter(Boolean)
@@ -378,7 +386,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   router.push(tab.path)
                 }}
               >
-                <span className="text-sm whitespace-nowrap">{tab.title}</span>
+                <span className="text-sm whitespace-nowrap">
+                  {tab.translationKey ? t(tab.translationKey) : tab.title}
+                </span>
                 {tabs.length > 1 && (
                   <button
                     onClick={(e) => {

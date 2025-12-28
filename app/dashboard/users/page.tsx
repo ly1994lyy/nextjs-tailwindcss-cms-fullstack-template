@@ -25,6 +25,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/lib/auth-context"
+import { useI18n } from "@/lib/i18n-context"
 import { toast } from "sonner"
 
 interface Role {
@@ -53,6 +54,7 @@ interface Department {
 
 export default function UsersPage() {
   const { hasPermission } = useAuth()
+  const { t } = useI18n()
   const [users, setUsers] = useState<User[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [roles, setRoles] = useState<Role[]>([])
@@ -267,25 +269,25 @@ export default function UsersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">用户管理</h1>
-          <p className="text-muted-foreground mt-2">管理系统用户及其信息</p>
+          <h1 className="text-3xl font-bold">{t("user.title")}</h1>
+          <p className="text-muted-foreground mt-2">{t("user.description")}</p>
         </div>
         {canWrite && (
           <Button onClick={() => handleOpenDialog()}>
             <Plus className="mr-2 h-4 w-4" />
-            添加用户
+            {t("user.add")}
           </Button>
         )}
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>用户列表</CardTitle>
+          <CardTitle>{t("user.list")}</CardTitle>
           <div className="mt-4 flex items-center gap-2">
             <div className="relative max-w-sm flex-1">
               <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
               <Input
-                placeholder="搜索用户..."
+                placeholder={t("user.search")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -298,14 +300,16 @@ export default function UsersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-center">用户名</TableHead>
-                  <TableHead className="text-center">姓名</TableHead>
-                  <TableHead className="text-center">联系方式</TableHead>
-                  <TableHead className="text-center">部门</TableHead>
-                  <TableHead className="text-center">角色</TableHead>
-                  <TableHead className="text-center">状态</TableHead>
-                  <TableHead className="text-center">创建时间</TableHead>
-                  {(canWrite || canDelete) && <TableHead className="text-center">操作</TableHead>}
+                  <TableHead className="text-center">{t("user.username")}</TableHead>
+                  <TableHead className="text-center">{t("user.name")}</TableHead>
+                  <TableHead className="text-center">{t("user.contact")}</TableHead>
+                  <TableHead className="text-center">{t("user.department")}</TableHead>
+                  <TableHead className="text-center">{t("user.role")}</TableHead>
+                  <TableHead className="text-center">{t("user.status")}</TableHead>
+                  <TableHead className="text-center">{t("user.createTime")}</TableHead>
+                  {(canWrite || canDelete) && (
+                    <TableHead className="text-center">{t("common.actions")}</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -320,7 +324,7 @@ export default function UsersPage() {
                 ) : users.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={8} className="h-24 text-center">
-                      暂无数据
+                      {t("menu.noData")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -351,7 +355,7 @@ export default function UsersPage() {
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant={user.status === "active" ? "default" : "secondary"}>
-                          {user.status === "active" ? "正常" : "停用"}
+                          {user.status === "active" ? t("user.active") : t("user.inactive")}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
@@ -410,55 +414,55 @@ export default function UsersPage() {
       >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{editingUser ? "编辑用户" : "添加用户"}</DialogTitle>
+            <DialogTitle>{editingUser ? t("user.edit") : t("user.add")}</DialogTitle>
             <DialogDescription>
-              {editingUser ? "修改用户信息" : "创建新的用户账号"}
+              {editingUser ? t("user.editDescription") : t("user.addDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="username">用户名</Label>
+              <Label htmlFor="username">{t("user.username")}</Label>
               <Input
                 id="username"
                 value={formData.username}
                 onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                placeholder="请输入用户名"
+                placeholder={t("user.enterUsername")}
                 disabled={!!editingUser || submitting}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="realName">姓名</Label>
+              <Label htmlFor="realName">{t("user.name")}</Label>
               <Input
                 id="realName"
                 value={formData.realName}
                 onChange={(e) => setFormData({ ...formData, realName: e.target.value })}
-                placeholder="请输入姓名"
+                placeholder={t("user.enterName")}
                 disabled={submitting}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">邮箱</Label>
+              <Label htmlFor="email">{t("user.email")}</Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="请输入邮箱"
+                placeholder={t("department.enterEmail")}
                 disabled={submitting}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">手机号</Label>
+              <Label htmlFor="phone">{t("user.mobile")}</Label>
               <Input
                 id="phone"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="请输入手机号"
+                placeholder={t("user.enterMobile")}
                 disabled={submitting}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="department">所属部门</Label>
+              <Label htmlFor="department">{t("user.department")}</Label>
               <select
                 id="department"
                 value={formData.departmentId}
@@ -466,7 +470,7 @@ export default function UsersPage() {
                 className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                 disabled={submitting}
               >
-                <option value="">请选择部门</option>
+                <option value="">{t("user.selectDepartment")}</option>
                 {departments.map((dept) => (
                   <option key={dept.id} value={dept.id}>
                     {dept.name}
@@ -475,7 +479,7 @@ export default function UsersPage() {
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="role">角色</Label>
+              <Label htmlFor="role">{t("user.role")}</Label>
               <select
                 id="role"
                 value={formData.roleId}
@@ -483,7 +487,7 @@ export default function UsersPage() {
                 className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                 disabled={submitting}
               >
-                <option value="">请选择角色</option>
+                <option value="">{t("user.selectRole")}</option>
                 {roles.map((role) => (
                   <option key={role.id} value={role.id}>
                     {role.name}
@@ -492,7 +496,7 @@ export default function UsersPage() {
               </select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="status">状态</Label>
+              <Label htmlFor="status">{t("user.status")}</Label>
               <select
                 id="status"
                 value={formData.status}
@@ -500,31 +504,31 @@ export default function UsersPage() {
                 className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                 disabled={submitting}
               >
-                <option value="active">正常</option>
-                <option value="inactive">停用</option>
+                <option value="active">{t("user.active")}</option>
+                <option value="inactive">{t("user.inactive")}</option>
               </select>
             </div>
             {!editingUser ? (
               <div className="col-span-1 space-y-2">
-                <Label htmlFor="password">密码</Label>
+                <Label htmlFor="password">{t("user.password")}</Label>
                 <Input
                   id="password"
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="请输入初始密码"
+                  placeholder={t("user.initialPassword")}
                   disabled={submitting}
                 />
               </div>
             ) : (
               <div className="col-span-1 space-y-2">
-                <Label htmlFor="password">密码 (留空不修改)</Label>
+                <Label htmlFor="password">{t("user.passwordPlaceholder")}</Label>
                 <Input
                   id="password"
                   type="password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="请输入新密码"
+                  placeholder={t("user.newPassword")}
                   disabled={submitting}
                 />
               </div>
@@ -532,11 +536,11 @@ export default function UsersPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
-              取消
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleSave} disabled={submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              保存
+              {t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -551,8 +555,8 @@ export default function UsersPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>确认删除</DialogTitle>
-            <DialogDescription>您确定要删除此用户吗？此操作无法撤销。</DialogDescription>
+            <DialogTitle>{t("user.confirmDelete")}</DialogTitle>
+            <DialogDescription>{t("user.deleteConfirmation")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
@@ -560,11 +564,11 @@ export default function UsersPage() {
               onClick={() => setDeleteDialogOpen(false)}
               disabled={submitting}
             >
-              取消
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              删除
+              {t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

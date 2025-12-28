@@ -31,6 +31,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/lib/auth-context"
 import { Badge } from "@/components/ui/badge"
+import { useI18n } from "@/lib/i18n-context"
 import { toast } from "sonner"
 
 interface Menu {
@@ -49,6 +50,7 @@ interface Menu {
 
 export default function MenusPage() {
   const { hasPermission } = useAuth()
+  const { t } = useI18n()
   const [menus, setMenus] = useState<Menu[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -309,21 +311,21 @@ export default function MenusPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">菜单管理</h1>
-        <p className="text-muted-foreground mt-2">管理系统菜单结构和权限</p>
+        <h1 className="text-3xl font-bold">{t("menu.title")}</h1>
+        <p className="text-muted-foreground mt-2">{t("menu.description")}</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>总菜单数</CardDescription>
+            <CardDescription>{t("menu.total")}</CardDescription>
             <CardTitle className="text-3xl">{menus.length}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>目录数量</CardDescription>
+            <CardDescription>{t("menu.directoryCount")}</CardDescription>
             <CardTitle className="text-3xl">
               {menus.filter((m) => m.type === "directory").length}
             </CardTitle>
@@ -331,7 +333,7 @@ export default function MenusPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>菜单项数量</CardDescription>
+            <CardDescription>{t("menu.menuCount")}</CardDescription>
             <CardTitle className="text-3xl">
               {menus.filter((m) => m.type === "menu").length}
             </CardTitle>
@@ -339,7 +341,7 @@ export default function MenusPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>按钮权限</CardDescription>
+            <CardDescription>{t("menu.buttonCount")}</CardDescription>
             <CardTitle className="text-3xl">
               {menus.filter((m) => m.type === "button").length}
             </CardTitle>
@@ -355,7 +357,7 @@ export default function MenusPage() {
               <div className="relative max-w-sm flex-1">
                 <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
                 <Input
-                  placeholder="搜索菜单名称或路径..."
+                  placeholder={t("menu.search")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9"
@@ -365,7 +367,7 @@ export default function MenusPage() {
             {canWrite && (
               <Button onClick={handleAdd}>
                 <Plus className="mr-2 h-4 w-4" />
-                新增菜单
+                {t("menu.add")}
               </Button>
             )}
           </div>
@@ -380,20 +382,22 @@ export default function MenusPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[300px]">菜单名称</TableHead>
-                    <TableHead className="text-center">类型</TableHead>
-                    <TableHead className="text-center">路由路径</TableHead>
-                    <TableHead className="text-center">权限标识</TableHead>
-                    <TableHead className="text-center">排序</TableHead>
-                    <TableHead className="text-center">状态</TableHead>
-                    {(canWrite || canDelete) && <TableHead className="text-center">操作</TableHead>}
+                    <TableHead className="w-[300px]">{t("menu.name")}</TableHead>
+                    <TableHead className="text-center">{t("menu.type")}</TableHead>
+                    <TableHead className="text-center">{t("menu.path")}</TableHead>
+                    <TableHead className="text-center">{t("menu.permission")}</TableHead>
+                    <TableHead className="text-center">{t("menu.sort")}</TableHead>
+                    <TableHead className="text-center">{t("menu.status")}</TableHead>
+                    {(canWrite || canDelete) && (
+                      <TableHead className="text-center">{t("common.actions")}</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {flattenedRows.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="h-24 text-center">
-                        暂无数据
+                        {t("menu.noData")}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -423,16 +427,16 @@ export default function MenusPage() {
                         </TableCell>
                         <TableCell className="text-center">
                           {menu.type === "directory" ? (
-                            <Badge variant="secondary">目录</Badge>
+                            <Badge variant="secondary">{t("menu.directory")}</Badge>
                           ) : menu.type === "button" ? (
                             <Badge
                               variant="outline"
                               className="border-blue-200 bg-blue-50 text-blue-700"
                             >
-                              按钮
+                              {t("menu.button")}
                             </Badge>
                           ) : (
-                            <Badge variant="outline">菜单</Badge>
+                            <Badge variant="outline">{t("menu.item")}</Badge>
                           )}
                         </TableCell>
                         <TableCell className="text-muted-foreground text-center text-sm">
@@ -450,7 +454,7 @@ export default function MenusPage() {
                         <TableCell className="text-center">{menu.sortOrder}</TableCell>
                         <TableCell className="text-center">
                           <Badge variant={menu.status === "active" ? "default" : "secondary"}>
-                            {menu.status === "active" ? "正常" : "停用"}
+                            {menu.status === "active" ? t("user.active") : t("user.inactive")}
                           </Badge>
                         </TableCell>
                         {(canWrite || canDelete) && (
@@ -499,12 +503,14 @@ export default function MenusPage() {
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingMenu ? "编辑菜单" : "新增菜单"}</DialogTitle>
-            <DialogDescription>{editingMenu ? "修改菜单信息" : "填写菜单信息"}</DialogDescription>
+            <DialogTitle>{editingMenu ? t("menu.edit") : t("menu.add")}</DialogTitle>
+            <DialogDescription>
+              {editingMenu ? t("menu.editDescription") : t("menu.addDescription")}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>菜单类型</Label>
+              <Label>{t("menu.selectType")}</Label>
               <Select
                 value={formData.type}
                 onValueChange={(value) => setFormData({ ...formData, type: value })}
@@ -514,24 +520,26 @@ export default function MenusPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="directory">目录</SelectItem>
-                  <SelectItem value="menu">菜单</SelectItem>
-                  <SelectItem value="button">按钮</SelectItem>
+                  <SelectItem value="directory">{t("menu.directory")}</SelectItem>
+                  <SelectItem value="menu">{t("menu.item")}</SelectItem>
+                  <SelectItem value="button">{t("menu.button")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>名称</Label>
+              <Label>{t("menu.name")}</Label>
               <Input
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder={formData.type === "button" ? "例如：新增用户" : "输入菜单名称"}
+                placeholder={
+                  formData.type === "button" ? t("menu.exampleAddUser") : t("menu.enterName")
+                }
                 disabled={submitting}
               />
             </div>
             {formData.type !== "button" && (
               <div className="space-y-2">
-                <Label>菜单路径</Label>
+                <Label>{t("menu.menuPath")}</Label>
                 <Input
                   value={formData.path}
                   onChange={(e) => setFormData({ ...formData, path: e.target.value })}
@@ -542,27 +550,27 @@ export default function MenusPage() {
             )}
             {formData.type !== "button" && (
               <div className="space-y-2">
-                <Label>图标</Label>
+                <Label>{t("menu.icon")}</Label>
                 <Input
                   value={formData.icon}
                   onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                  placeholder="lucide-react 图标名称"
+                  placeholder={t("menu.iconPlaceholder")}
                   disabled={submitting}
                 />
               </div>
             )}
             <div className="space-y-2">
-              <Label>父菜单</Label>
+              <Label>{t("menu.parent")}</Label>
               <Select
                 value={formData.parentId}
                 onValueChange={(value) => setFormData({ ...formData, parentId: value })}
                 disabled={submitting}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="无（顶级菜单）" />
+                  <SelectValue placeholder={t("menu.topLevel")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">无（顶级菜单）</SelectItem>
+                  <SelectItem value="0">{t("menu.topLevel")}</SelectItem>
                   {getAvailableParents().map((menu) => (
                     <SelectItem key={menu.id} value={menu.id.toString()}>
                       {menu.name}
@@ -573,17 +581,17 @@ export default function MenusPage() {
             </div>
             {(formData.type === "menu" || formData.type === "button") && (
               <div className="space-y-2">
-                <Label>权限标识</Label>
+                <Label>{t("menu.permission")}</Label>
                 <Input
                   value={formData.permissionCode}
                   onChange={(e) => setFormData({ ...formData, permissionCode: e.target.value })}
-                  placeholder="例如: menu:read 或 user:add"
+                  placeholder={t("menu.examplePermission")}
                   disabled={submitting}
                 />
               </div>
             )}
             <div className="space-y-2">
-              <Label>排序</Label>
+              <Label>{t("menu.sort")}</Label>
               <Input
                 type="number"
                 value={formData.sortOrder}
@@ -592,7 +600,7 @@ export default function MenusPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="status">状态</Label>
+              <Label htmlFor="status">{t("menu.status")}</Label>
               <select
                 id="status"
                 value={formData.status}
@@ -600,19 +608,19 @@ export default function MenusPage() {
                 className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                 disabled={submitting}
               >
-                <option value="active">正常</option>
-                <option value="inactive">停用</option>
+                <option value="active">{t("user.active")}</option>
+                <option value="inactive">{t("user.inactive")}</option>
               </select>
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
-              取消
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleSubmit} disabled={submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              确定
+              {t("common.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -628,8 +636,8 @@ export default function MenusPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>确认删除</DialogTitle>
-            <DialogDescription>您确定要删除此菜单吗？此操作无法撤销。</DialogDescription>
+            <DialogTitle>{t("menu.confirmDelete")}</DialogTitle>
+            <DialogDescription>{t("menu.deleteConfirmation")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
@@ -637,11 +645,11 @@ export default function MenusPage() {
               onClick={() => setDeleteDialogOpen(false)}
               disabled={submitting}
             >
-              取消
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              删除
+              {t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

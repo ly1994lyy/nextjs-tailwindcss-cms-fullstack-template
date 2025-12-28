@@ -24,7 +24,9 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/lib/auth-context"
+import { useI18n } from "@/lib/i18n-context"
 import { toast } from "sonner"
+import { Badge } from "@/components/ui/badge"
 
 interface Department {
   id: number
@@ -43,6 +45,7 @@ interface Department {
 
 export default function DepartmentsPage() {
   const { hasPermission } = useAuth()
+  const { t } = useI18n()
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
@@ -80,7 +83,7 @@ export default function DepartmentsPage() {
       setTotalCount(data.total)
     } catch (error) {
       console.error(error)
-      toast.error("获取部门列表失败")
+      toast.error(t("menu.noData"))
     } finally {
       setLoading(false)
     }
@@ -120,7 +123,7 @@ export default function DepartmentsPage() {
     setSubmitting(true)
     try {
       if (!formData.name) {
-        toast.error("部门名称不能为空")
+        toast.error(t("department.nameRequired"))
         setSubmitting(false)
         return
       }
@@ -131,6 +134,12 @@ export default function DepartmentsPage() {
         id: editingDepartment?.id,
       }
 
+      if (formData.parentId) {
+        body.parentId = Number(formData.parentId)
+      } else {
+        body.parentId = null
+      }
+
       const res = await fetch("/api/departments", {
         method,
         headers: { "Content-Type": "application/json" },
@@ -139,7 +148,7 @@ export default function DepartmentsPage() {
 
       if (!res.ok) {
         const text = await res.text()
-        let errorMsg = editingDepartment ? "更新失败" : "创建失败"
+        let errorMsg = "Error"
         try {
           const data = JSON.parse(text)
           if (data && data.error) errorMsg = data.error
@@ -149,7 +158,7 @@ export default function DepartmentsPage() {
         throw new Error(errorMsg)
       }
 
-      toast.success(editingDepartment ? "更新成功" : "创建成功")
+      toast.success(editingDepartment ? t("department.edit") : t("department.add"))
       setDialogOpen(false)
       fetchDepartments()
     } catch (error: any) {
@@ -170,7 +179,7 @@ export default function DepartmentsPage() {
 
       if (!res.ok) {
         const text = await res.text()
-        let errorMsg = "删除失败"
+        let errorMsg = "Error"
         try {
           const data = JSON.parse(text)
           if (data && data.error) errorMsg = data.error
@@ -180,7 +189,7 @@ export default function DepartmentsPage() {
         throw new Error(errorMsg)
       }
 
-      toast.success("删除成功")
+      toast.success(t("department.deleteConfirmation"))
       setDeleteDialogOpen(false)
       setDeletingDepartmentId(null)
       fetchDepartments()
@@ -196,25 +205,25 @@ export default function DepartmentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">部门管理</h1>
-          <p className="text-muted-foreground mt-2">管理组织架构和部门信息</p>
+          <h1 className="text-3xl font-bold">{t("department.title")}</h1>
+          <p className="text-muted-foreground mt-2">{t("department.description")}</p>
         </div>
         {canWrite && (
           <Button onClick={() => handleOpenDialog()}>
             <Plus className="mr-2 h-4 w-4" />
-            添加部门
+            {t("department.add")}
           </Button>
         )}
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>部门列表</CardTitle>
+          <CardTitle>{t("department.list")}</CardTitle>
           <div className="mt-4 flex items-center gap-2">
             <div className="relative max-w-sm flex-1">
               <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
               <Input
-                placeholder="搜索部门..."
+                placeholder={t("department.search")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
@@ -227,13 +236,15 @@ export default function DepartmentsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-center">部门名称</TableHead>
-                  <TableHead className="w-[80px] text-center">ID</TableHead>
-                  <TableHead className="text-center">上级部门</TableHead>
-                  <TableHead className="text-center">负责人</TableHead>
-                  <TableHead className="text-center">成员数量</TableHead>
-                  <TableHead className="text-center">创建时间</TableHead>
-                  {(canWrite || canDelete) && <TableHead className="text-center">操作</TableHead>}
+                  <TableHead className="text-center">{t("department.name")}</TableHead>
+                  <TableHead className="w-[80px] text-center">{t("department.id")}</TableHead>
+                  <TableHead className="text-center">{t("department.parent")}</TableHead>
+                  <TableHead className="text-center">{t("department.manager")}</TableHead>
+                  <TableHead className="text-center">{t("department.memberCount")}</TableHead>
+                  <TableHead className="text-center">{t("department.createTime")}</TableHead>
+                  {(canWrite || canDelete) && (
+                    <TableHead className="text-center">{t("common.actions")}</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -248,24 +259,25 @@ export default function DepartmentsPage() {
                 ) : departments.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center">
-                      暂无数据
+                      {t("menu.noData")}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  departments.map((department) => (
-                    <TableRow key={department.id}>
-                      <TableCell className="text-center font-medium">
-                        <div>{department.name}</div>
-                        <div className="text-muted-foreground text-xs">
-                          {department.description}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">{department.id}</TableCell>
-                      <TableCell className="text-center">{department.parentName || "-"}</TableCell>
-                      <TableCell className="text-center">{department.manager || "-"}</TableCell>
-                      <TableCell className="text-center">{department.userCount}</TableCell>
+                  departments.map((dept) => (
+                    <TableRow key={dept.id}>
+                      <TableCell className="text-center font-medium">{dept.name}</TableCell>
+                      <TableCell className="text-center">{dept.id}</TableCell>
                       <TableCell className="text-center">
-                        {new Date(department.createdAt).toLocaleDateString()}
+                        {dept.parentName ? (
+                          <Badge variant="secondary">{dept.parentName}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">{dept.manager || "-"}</TableCell>
+                      <TableCell className="text-center">{dept.userCount}</TableCell>
+                      <TableCell className="text-center">
+                        {new Date(dept.createdAt).toLocaleDateString()}
                       </TableCell>
                       {(canWrite || canDelete) && (
                         <TableCell className="text-center">
@@ -274,7 +286,7 @@ export default function DepartmentsPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => handleOpenDialog(department)}
+                                onClick={() => handleOpenDialog(dept)}
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
@@ -284,7 +296,7 @@ export default function DepartmentsPage() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => {
-                                  setDeletingDepartmentId(department.id)
+                                  setDeletingDepartmentId(dept.id)
                                   setDeleteDialogOpen(true)
                                 }}
                               >
@@ -300,15 +312,15 @@ export default function DepartmentsPage() {
               </TableBody>
             </Table>
           </div>
+          <div className="mt-4">
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              onPageChange={setCurrentPage}
+            />
+          </div>
         </CardContent>
-        <div className="px-6 pb-6">
-          <PaginationControls
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalCount={totalCount}
-            onPageChange={setCurrentPage}
-          />
-        </div>
       </Card>
 
       {/* Add/Edit Dialog */}
@@ -320,27 +332,29 @@ export default function DepartmentsPage() {
       >
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>{editingDepartment ? "编辑部门" : "添加部门"}</DialogTitle>
+            <DialogTitle>
+              {editingDepartment ? t("department.edit") : t("department.add")}
+            </DialogTitle>
             <DialogDescription>
-              {editingDepartment ? "修改部门信息" : "创建新的部门"}
+              {editingDepartment ? t("department.editDescription") : t("department.addDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">部门名称</Label>
+                <Label htmlFor="name">{t("department.name")}</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="请输入部门名称"
+                  placeholder={t("department.enterName")}
                   disabled={submitting}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="parent">上级部门</Label>
+              <Label htmlFor="parent">{t("department.parent")}</Label>
               <select
                 id="parent"
                 value={formData.parentId}
@@ -348,7 +362,7 @@ export default function DepartmentsPage() {
                 className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                 disabled={submitting}
               >
-                <option value="">无上级部门</option>
+                <option value="">{t("department.noParent")}</option>
                 {departments
                   .filter((dept) => dept.id !== editingDepartment?.id)
                   .map((dept) => (
@@ -361,57 +375,57 @@ export default function DepartmentsPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="manager">负责人</Label>
+                <Label htmlFor="manager">{t("department.manager")}</Label>
                 <Input
                   id="manager"
                   value={formData.manager}
                   onChange={(e) => setFormData({ ...formData, manager: e.target.value })}
-                  placeholder="请输入负责人"
+                  placeholder={t("department.enterManager")}
                   disabled={submitting}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">联系电话</Label>
+                <Label htmlFor="phone">{t("department.phone")}</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="请输入联系电话"
+                  placeholder={t("department.enterPhone")}
                   disabled={submitting}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">邮箱</Label>
+              <Label htmlFor="email">{t("department.email")}</Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="请输入邮箱"
+                placeholder={t("department.enterEmail")}
                 disabled={submitting}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">描述</Label>
+              <Label htmlFor="description">{t("common.description")}</Label>
               <Input
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="请输入部门描述"
+                placeholder={t("department.enterDescription")}
                 disabled={submitting}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={submitting}>
-              取消
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleSave} disabled={submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              保存
+              {t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -426,8 +440,8 @@ export default function DepartmentsPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>确认删除</DialogTitle>
-            <DialogDescription>您确定要删除此部门吗？此操作无法撤销。</DialogDescription>
+            <DialogTitle>{t("department.confirmDelete")}</DialogTitle>
+            <DialogDescription>{t("department.deleteConfirmation")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
@@ -435,11 +449,11 @@ export default function DepartmentsPage() {
               onClick={() => setDeleteDialogOpen(false)}
               disabled={submitting}
             >
-              取消
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={submitting}>
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              删除
+              {t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
